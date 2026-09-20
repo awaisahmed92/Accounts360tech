@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  accounts360-db:
+    image: mysql:8.0
+    container_name: accounts360techx-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "RootA360#2026"
+      MYSQL_DATABASE: "accounts360tech"
+      MYSQL_USER: "a360user"
+      MYSQL_PASSWORD: "A360@Secure#2026"
+    volumes:
+      - accounts360_db:/var/lib/mysql
+      - ./migrations/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./migrations/bookkeeping.sql:/docker-entrypoint-initdb.d/02_bookkeeping.sql:ro
+    networks:
+      - accounts360_internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "a360user", "-pA360@Secure#2026"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  accounts360-app:
+    image: accounts360techx:latest
+    container_name: accounts360techx-app
+    restart: unless-stopped
+    depends_on:
+      accounts360-db:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    volumes:
+      - accounts360_storage:/var/www/html/storage
+    networks:
+      - coolify
+      - accounts360_internal
+    labels:
+      # Traefik routing (Coolify uses letsencrypt certresolver)
+      - "traefik.enable=true"
+      - "traefik.http.routers.accounts360.rule=Host(`accounts360techx.com`) || Host(`www.accounts360techx.com`)"
+      - "traefik.http.routers.accounts360.entrypoints=https"
+      - "traefik.http.routers.accounts360.tls=true"
+      - "traefik.http.routers.accounts360.tls.certresolver=letsencrypt"
+      - "traefik.http.services.accounts360.loadbalancer.server.port=80"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.accounts360-http.rule=Host(`accounts360techx.com`) || Host(`www.accounts360techx.com`)"
+      - "traefik.http.routers.accounts360-http.entrypoints=http"
+      - "traefik.http.routers.accounts360-http.middlewares=accounts360-redir"
+      - "traefik.http.middlewares.accounts360-redir.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.accounts360-redir.redirectscheme.permanent=true"
+      # Security headers middleware
+      - "traefik.http.middlewares.accounts360-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
+      - "traefik.http.middlewares.accounts360-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.routers.accounts360.middlewares=accounts360-headers"
+
+volumes:
+  accounts360_db:
+    driver: local
+  accounts360_storage:
+    driver: local
+
+networks:
+  coolify:
+    external: true
+  accounts360_internal:
+    driver: bridge

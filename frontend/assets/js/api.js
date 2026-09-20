@@ -4,7 +4,12 @@
  */
 
 const API = (() => {
-  const BASE = 'http://localhost/Accounts360tech/backend/public/api/v1';
+  // Auto-detect: production domain uses /backend/public path; local WAMP uses sub-path
+  const _origin = window.location.origin;
+  const _isLocal = _origin.includes('localhost') || _origin.includes('127.0.0.1');
+  const BASE = _isLocal
+    ? 'http://localhost/Accounts360tech/backend/public/api/v1'
+    : _origin + '/backend/public/api/v1';
 
   let _token        = localStorage.getItem('token')        || null;
   let _refreshToken = localStorage.getItem('refresh_token') || null;
@@ -135,8 +140,10 @@ const API = (() => {
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
   }
 
+  function getBaseUrl() { return BASE; }
+
   return {
-    setTokens, clearTokens, getToken, getRefreshToken,
+    setTokens, clearTokens, getToken, getRefreshToken, getBaseUrl,
     login, register, logout, forgotPassword,
     uploadDocuments, listDocuments, getDocument, updateDocument,
     approveDocument, archiveDocument, deleteDocument, downloadDocument, exportDocuments,

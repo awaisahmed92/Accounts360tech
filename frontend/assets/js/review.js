@@ -121,7 +121,8 @@ const Review = (() => {
 
     // Document preview
     const preview = document.getElementById('doc-preview');
-    const dlUrl   = `http://localhost/Accounts360tech/backend/public/api/v1/documents/${id}/download`;
+    const _apiBase = API.getBaseUrl ? API.getBaseUrl() : window.location.origin + '/backend/public/api/v1';
+    const dlUrl   = `${_apiBase}/documents/${id}/download`;
     const token   = API.getToken();
     if (doc.file_type === 'application/pdf') {
       preview.innerHTML = `<iframe src="${dlUrl}?token=${encodeURIComponent(token)}"></iframe>`;
