@@ -34,6 +34,7 @@ services:
     volumes:
       - accounts360_storage:/var/www/html/storage
       - ./.env.prod:/var/www/html/backend/.env:ro
+      - ./keys:/opt/accounts360techx/keys:ro
     networks:
       - coolify
       - accounts360_internal
@@ -71,6 +72,7 @@ services:
     volumes:
       - accounts360_storage:/var/www/html/storage
       - ./.env.prod:/var/www/html/backend/.env:ro
+      - ./keys:/opt/accounts360techx/keys:ro
     networks:
       - accounts360_internal
     command: ["php", "/var/www/html/backend/worker/worker.php"]
