@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Default admin account  (password: Admin@1234)
 INSERT IGNORE INTO users (name, email, password_hash, role, is_active)
 VALUES ('Administrator', 'admin@accounts360.tech',
-        '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 1);
+        '$2y$12$igz5CrTi6h81.MoSgTznZuzmXMm3udjnd9QX8qRfIB6DhDqyx8Uqm', 'admin', 1);
 
 -- ── 2. refresh_tokens ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS refresh_tokens (

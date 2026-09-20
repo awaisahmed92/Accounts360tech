@@ -33,6 +33,7 @@ services:
       - .env.prod
     volumes:
       - accounts360_storage:/var/www/html/storage
+      - ./.env.prod:/var/www/html/backend/.env:ro
     networks:
       - coolify
       - accounts360_internal
@@ -43,11 +44,13 @@ services:
       - "traefik.http.routers.accounts360.entrypoints=https"
       - "traefik.http.routers.accounts360.tls=true"
       - "traefik.http.routers.accounts360.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.accounts360.priority=1000"
       - "traefik.http.services.accounts360.loadbalancer.server.port=80"
       # HTTP → HTTPS redirect
       - "traefik.http.routers.accounts360-http.rule=Host(`accounts360techx.com`) || Host(`www.accounts360techx.com`)"
       - "traefik.http.routers.accounts360-http.entrypoints=http"
       - "traefik.http.routers.accounts360-http.middlewares=accounts360-redir"
+      - "traefik.http.routers.accounts360-http.priority=1000"
       - "traefik.http.middlewares.accounts360-redir.redirectscheme.scheme=https"
       - "traefik.http.middlewares.accounts360-redir.redirectscheme.permanent=true"
       # Security headers middleware

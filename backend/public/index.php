@@ -55,10 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ── Route parsing ──────────────────────────────────────────────────────────────
 $method  = $_SERVER['REQUEST_METHOD'];
 $uri     = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-// Strip base prefix (works both on WAMP sub-path and direct vhost)
-$base    = '/Accounts360tech/backend/public';
-if (str_starts_with($uri, $base)) {
-    $uri = substr($uri, strlen($base));
+// Strip base prefix (works both on WAMP sub-path and direct vhost / Docker)
+foreach (['/Accounts360tech/backend/public', '/backend/public'] as $base) {
+    if (str_starts_with($uri, $base)) {
+        $uri = substr($uri, strlen($base));
+        break;
+    }
 }
 $uri     = '/' . trim($uri, '/');
 
