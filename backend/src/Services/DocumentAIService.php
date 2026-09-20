@@ -29,23 +29,33 @@ class DocumentAIService
 
     public static function process(string $filePath, string $mimeType): array
     {
-        $apiKey = Config::get('DOCAI_API_KEY', '');
+        $enabled = filter_var((string)Config::get('DOCUMENT_AI_ENABLED', '0'), FILTER_VALIDATE_BOOLEAN);
+        $credentialsPath = (string) (Config::get('DOCAI_API_KEY', '') ?: Config::get('GCP_CREDENTIALS_PATH', ''));
 
-        if (empty($apiKey) || !file_exists($apiKey)) {
-            return self::mockExtract($filePath);
+        if (!$enabled) {
+            return self::fallbackExtract();
+        }
+        if ($credentialsPath === '' || !file_exists($credentialsPath)) {
+            throw new \RuntimeException('Document AI is enabled but credentials file is missing.');
         }
 
-        return self::callDocumentAI($filePath, $mimeType);
+        return self::callDocumentAI($filePath, $mimeType, $credentialsPath);
     }
 
     // ── Live Google Document AI call ──────────────────────────
-    private static function callDocumentAI(string $filePath, string $mimeType): array
+    private static function callDocumentAI(string $filePath, string $mimeType, string $credentialsPath): array
     {
-        $projectId   = Config::get('DOCAI_PROJECT_ID', '');
-        $processorId = Config::get('DOCAI_PROCESSOR_ID', '');
-        $location    = Config::get('DOCAI_LOCATION', 'us');
+        $projectId   = (string) (Config::get('DOCAI_PROJECT_ID', '') ?: Config::get('GCP_PROJECT_ID', ''));
+        $processorId = (string) (Config::get('DOCAI_PROCESSOR_ID', '') ?: Config::get('GCP_PROCESSOR_ID', ''));
+        $location    = (string) (Config::get('DOCAI_LOCATION', '') ?: Config::get('GCP_LOCATION', 'us'));
+        if ($projectId === '' || $processorId === '') {
+            throw new \RuntimeException('Document AI is enabled but project/processor ID is missing.');
+        }
 
-        $keyJson     = json_decode(file_get_contents(Config::get('DOCAI_API_KEY')), true);
+        $keyJson     = json_decode(file_get_contents($credentialsPath), true);
+        if (!is_array($keyJson) || empty($keyJson['client_email']) || empty($keyJson['private_key'])) {
+            throw new \RuntimeException('Invalid GCP service account JSON.');
+        }
         $accessToken = self::getAccessToken($keyJson);
 
         $endpoint = "https://{$location}-documentai.googleapis.com/v1/projects/{$projectId}/locations/{$location}/processors/{$processorId}:process";
@@ -117,32 +127,19 @@ class DocumentAIService
         return $result;
     }
 
-    // ── Mock extraction for local dev ─────────────────────────
-    private static function mockExtract(string $filePath): array
+    // ── Safe fallback (no fabricated values) ─────────────────
+    private static function fallbackExtract(): array
     {
-        $suppliers = [
-            ['name' => 'Starbucks Coffee', 'cat' => 'Meals & Entertainment',    'total' => 12.50, 'tax' => 1.50],
-            ['name' => 'Amazon Web Services', 'cat' => 'Software & Subscriptions', 'total' => 245.00, 'tax' => 0.00],
-            ['name' => 'Uber Technologies', 'cat' => 'Travel & Transport',        'total' => 28.75, 'tax' => 2.50],
-            ['name' => 'Office Depot',      'cat' => 'Office Supplies',           'total' => 67.30, 'tax' => 5.20],
-            ['name' => 'Google Workspace',  'cat' => 'Software & Subscriptions',  'total' => 18.00, 'tax' => 0.00],
-            ['name' => 'Delta Airlines',    'cat' => 'Travel & Transport',        'total' => 420.00, 'tax' => 35.00],
-        ];
-        $pick = $suppliers[array_rand($suppliers)];
-
         return [
-            'supplier_name'    => $pick['name'],
-            'document_date'    => date('Y-m-d', strtotime('-' . rand(1, 30) . ' days')),
-            'total_amount'     => $pick['total'],
-            'tax_amount'       => $pick['tax'],
+            'supplier_name'    => null,
+            'document_date'    => null,
+            'total_amount'     => null,
+            'tax_amount'       => null,
             'currency'         => 'USD',
-            'category'         => $pick['cat'],
-            'confidence_score' => round(rand(7500, 9900) / 100, 2),
-            'latency_ms'       => rand(800, 2500),
-            'line_items'       => [
-                ['description' => 'Item 1', 'quantity' => 1, 'unit_price' => round($pick['total'] * 0.6, 2), 'line_total' => round($pick['total'] * 0.6, 2)],
-                ['description' => 'Item 2', 'quantity' => 1, 'unit_price' => round($pick['total'] * 0.4, 2), 'line_total' => round($pick['total'] * 0.4, 2)],
-            ],
+            'category'         => 'Other / Uncategorized',
+            'confidence_score' => 0,
+            'latency_ms'       => 0,
+            'line_items'       => [],
         ];
     }
 

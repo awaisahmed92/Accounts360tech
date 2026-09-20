@@ -59,6 +59,22 @@ services:
       - "traefik.http.middlewares.accounts360-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
       - "traefik.http.routers.accounts360.middlewares=accounts360-headers"
 
+  accounts360-worker:
+    image: accounts360techx:latest
+    container_name: accounts360techx-worker
+    restart: unless-stopped
+    depends_on:
+      accounts360-db:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    volumes:
+      - accounts360_storage:/var/www/html/storage
+      - ./.env.prod:/var/www/html/backend/.env:ro
+    networks:
+      - accounts360_internal
+    command: ["php", "/var/www/html/backend/worker/worker.php"]
+
 volumes:
   accounts360_db:
     driver: local
