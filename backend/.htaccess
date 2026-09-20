@@ -1,0 +1,10 @@
+Options -Indexes
+
+# Block direct access to .env and PHP source files (Apache 2.4 syntax)
+<Files ".env">
+    Require all denied
+</Files>
+
+<FilesMatch "\.(sql)$">
+    Require all denied
+</FilesMatch>
