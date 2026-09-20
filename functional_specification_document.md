@@ -7,8 +7,8 @@
 | **OCR / AI Provider** | **Google Document AI** — Expense Parser processor (chosen for structured receipt/invoice parsing, pay-per-page pricing, and JSON output schema) |
 | **File Storage** | **Local VPS filesystem** (`/var/app/storage/documents/`, outside web root) — S3-compatible migration path reserved for post-MVP scaling |
 | **Async Queue** | **Database-backed polling queue** — PHP worker script polls a `processing_queue` table every 5 seconds; Flutter Web polls `GET /documents/{id}` every 3 seconds until status is `ready` or `error` |
-| **Version** | 1.1.0 |
-| **Last Updated** | September 20, 2026 |
+| **Version** | 1.2.0 |
+| **Last Updated** | September 21, 2026 |
 
 ---
 
@@ -95,10 +95,10 @@ File Storage: /var/app/storage/documents/{user_id}/{uuid}.{ext}
 - Registration form: `name`, `email`, `password` (min 8 chars, 1 uppercase, 1 number).
 - Server-side email uniqueness validation with a clear error response.
 - Passwords stored as `bcrypt` hashes (cost factor 12).
-- Login returns a signed **JWT** (HS256, 24-hour expiry) and a **refresh token** (random 64-char hex, stored in `refresh_tokens` table, 30-day expiry).
-- Flutter stores JWT in memory and refresh token in `localStorage`.
+- Login returns a signed **JWT** (HS256, 24-hour expiry) and sets a **refresh token cookie** (random 64-char hex persisted in `refresh_tokens` table, 30-day expiry).
+- Flutter stores JWT in memory. The refresh token is stored in an **HttpOnly, Secure, SameSite=Strict cookie** set by the API (never exposed to JavaScript).
 - Silent token refresh: Flutter calls `POST /auth/refresh` when a 401 is received; on success, replaces the in-memory JWT.
-- Logout: Flutter calls `POST /auth/logout`, server deletes the refresh token row; Flutter clears all stored tokens.
+- Logout: Flutter calls `POST /auth/logout`, server deletes the refresh token row and expires the refresh cookie; Flutter clears the in-memory JWT.
 - Password reset: `POST /auth/forgot-password` sends a time-limited (1-hour) reset link to the user's email.
 
 ---
@@ -125,7 +125,7 @@ File Storage: /var/app/storage/documents/{user_id}/{uuid}.{ext}
 **Functional Requirements:**
 - PHP upload handler saves the raw file to `/var/app/storage/documents/{user_id}/{uuid}.{ext}` and inserts a row into `documents` with `status = 'pending'`.
 - A `processing_queue` row is inserted atomically with the document row (same DB transaction).
-- A **PHP CLI worker** (`worker.php`), scheduled via cron every 5 seconds, polls `processing_queue` for `status = 'pending'` rows, claims one row (sets `status = 'processing'`), calls the Google Document AI Expense Parser, writes results to `extracted_data` and `line_items`, then sets `documents.status = 'ready'` (or `'error'` on failure).
+- A **PHP CLI worker** (`worker.php`), scheduled via cron every 5 seconds, polls `processing_queue` for `status = 'pending'` rows and claims work **atomically** (single transaction using row locking or equivalent atomic update), then calls the Google Document AI Expense Parser, writes results to `extracted_data` and `line_items`, and sets `documents.status = 'ready'` (or `'error'` on failure).
 - Google Document AI Expense Parser extracts:
 
   | Field | Target Column |
@@ -210,6 +210,8 @@ CREATE TABLE users (
     role            ENUM('admin', 'user') DEFAULT 'user',
     is_active       BOOLEAN DEFAULT TRUE,
     email_verified_at TIMESTAMP NULL DEFAULT NULL,
+    failed_login_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    locked_until    TIMESTAMP NULL DEFAULT NULL,
     last_login_at   TIMESTAMP NULL DEFAULT NULL,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -320,6 +322,38 @@ CREATE TABLE processing_logs (
 );
 ```
 
+### Table 8: `document_audit_logs`
+```sql
+CREATE TABLE document_audit_logs (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    user_id        INT NOT NULL,
+    document_id    INT NOT NULL,
+    action_type    ENUM('update','approve','archive','delete') NOT NULL,
+    action_payload JSON NULL,                       -- Optional field-level diff snapshot
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+    INDEX idx_document_action_time (document_id, action_type, created_at),
+    INDEX idx_user_time (user_id, created_at)
+);
+```
+
+### Table 9: `admin_audit_logs`
+```sql
+CREATE TABLE admin_audit_logs (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id   INT NOT NULL,
+    target_user_id  INT NOT NULL,
+    action_type     ENUM('activate_user','deactivate_user') NOT NULL,
+    reason          VARCHAR(255) NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_admin_time (admin_user_id, created_at),
+    INDEX idx_target_time (target_user_id, created_at)
+);
+```
+
 ---
 
 ## 6. API Endpoints Specification (PHP Backend)
@@ -337,9 +371,9 @@ JWT must be sent as: `Authorization: Bearer <token>` on all protected routes.
 | Method | Endpoint | Auth | Description |
 | :--- | :--- | :--- | :--- |
 | POST | `/api/v1/auth/register` | Public | Register a new user |
-| POST | `/api/v1/auth/login` | Public | Login and receive JWT + refresh token |
-| POST | `/api/v1/auth/refresh` | Public | Exchange refresh token for a new JWT |
-| POST | `/api/v1/auth/logout` | JWT | Invalidate the current refresh token |
+| POST | `/api/v1/auth/login` | Public | Login and receive JWT + set refresh cookie |
+| POST | `/api/v1/auth/refresh` | Public (cookie) | Exchange refresh cookie for a new JWT |
+| POST | `/api/v1/auth/logout` | JWT + cookie | Invalidate the current refresh token |
 | POST | `/api/v1/auth/forgot-password` | Public | Send password reset email |
 | POST | `/api/v1/auth/reset-password` | Public | Reset password using token from email |
 
@@ -354,15 +388,15 @@ Response: { "success": true, "data": { "user": { "id": 1, "name": "Jane Smith", 
 Request:  { "email": "jane@co.com", "password": "Secret123" }
 Response: { "success": true, "data": {
     "token": "<jwt_24h>",
-    "refresh_token": "<hex_64_chars>",
     "expires_in": 86400,
     "user": { "id": 1, "name": "Jane Smith", "role": "user" }
 }}
+Header:   Set-Cookie: refresh_token=<opaque>; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth
 ```
 
 **POST `/api/v1/auth/refresh`**
 ```
-Request:  { "refresh_token": "<hex_64_chars>" }
+Request:  No JSON body required. Refresh token is read from HttpOnly cookie.
 Response: { "success": true, "data": { "token": "<new_jwt_24h>", "expires_in": 86400 } }
 ```
 
@@ -495,12 +529,14 @@ Columns: Date, Supplier, Category, Currency, Tax Amount, Total Amount, Status, A
 - `GET /documents/export`: **2 requests per minute per authenticated user**.
 
 ### 7.5 CSRF & Request Validation
-- All state-changing API endpoints (`POST`, `PATCH`, `DELETE`) require a valid JWT — the JWT itself acts as the CSRF mitigation for API-only clients (Flutter Web communicates via `Authorization` header, not cookies).
+- All state-changing API endpoints (`POST`, `PATCH`, `DELETE`) require a valid JWT in the `Authorization` header.
+- Refresh-token cookie endpoints (`POST /auth/refresh`, `POST /auth/logout`) require CSRF protection via one of: `Origin`/`Referer` validation with strict allowlist, or a double-submit CSRF token header.
 - Content-Type header is validated for JSON endpoints; multipart endpoints check `$_FILES` integrity.
 
 ### 7.6 Audit Logging
-- All `PATCH`, `POST /approve`, `POST /archive`, and `DELETE` actions by any user are logged to `processing_logs` with `user_id`, `document_id`, action type, and timestamp.
-- Admin account management actions (activate/deactivate) are logged to a separate `admin_audit_logs` table.
+- `processing_logs` is reserved for AI worker processing events only (attempts, latency, provider status, errors).
+- All `PATCH`, `POST /approve`, `POST /archive`, and `DELETE` actions by any user are logged to `document_audit_logs` with `user_id`, `document_id`, action type, optional payload, and timestamp.
+- Admin account management actions (activate/deactivate) are logged to `admin_audit_logs`.
 
 ### 7.7 Password & Account Security
 - Passwords hashed with `password_hash($pass, PASSWORD_BCRYPT, ['cost' => 12])`.
@@ -522,10 +558,13 @@ Columns: Date, Supplier, Category, Currency, Tax Amount, Total Amount, Status, A
                     ▼
           [PHP worker.php]
                     │
-          ┌─────────▼─────────┐
-          │  SELECT one row   │  WHERE status='pending' ORDER BY created_at LIMIT 1
-          │  UPDATE to        │  status='processing', claimed_at=NOW()
-          └─────────┬─────────┘
+          ┌─────────▼──────────────────────────────────────┐
+          │  ATOMIC CLAIM                                  │
+          │  BEGIN TX                                      │
+          │  SELECT ... FOR UPDATE SKIP LOCKED            │
+          │  UPDATE status='processing', claimed_at=NOW() │
+          │  COMMIT                                        │
+          └─────────┬──────────────────────────────────────┘
                     │
           ┌─────────▼────────────────────┐
           │  POST to Google Document AI  │  (Expense Parser processor)
@@ -551,7 +590,7 @@ Flutter Web polls GET /documents/{id} every 3 seconds until status ≠ 'pending'
 
 | Sprint | Tasks |
 | :--- | :--- |
-| **Sprint 1 — Foundation** | VPS setup, MySQL schema migration (all 7 tables), Nginx + SSL config, PHP project scaffold with PDO connection, `.env` config file |
+| **Sprint 1 — Foundation** | VPS setup, MySQL schema migration (all 9 tables), Nginx + SSL config, PHP project scaffold with PDO connection, `.env` config file |
 | **Sprint 2 — Auth** | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, JWT middleware, rate limiting rules |
 | **Sprint 3 — Upload & Storage** | `POST /documents/upload` handler, file validation, UUID renaming, storage path, `processing_queue` insert, Flutter upload UI with progress bar |
 | **Sprint 4 — AI Worker** | `worker.php` CLI script, Google Document AI integration, `extracted_data` + `line_items` insert, retry logic, `processing_logs` write, cron job setup |

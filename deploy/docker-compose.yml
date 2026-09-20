@@ -40,6 +40,7 @@ services:
     labels:
       # Traefik routing (Coolify uses letsencrypt certresolver)
       - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
       - "traefik.http.routers.accounts360.rule=Host(`accounts360techx.com`) || Host(`www.accounts360techx.com`)"
       - "traefik.http.routers.accounts360.entrypoints=https"
       - "traefik.http.routers.accounts360.tls=true"

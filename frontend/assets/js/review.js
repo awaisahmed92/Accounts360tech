@@ -6,6 +6,7 @@ const Review = (() => {
   let currentPage = 1;
   let currentDocId = null;
   let pollTimer = null;
+  let currentPreviewUrl = null;
 
   const POLL_IDS = new Set(); // IDs currently processing
 
@@ -119,16 +120,11 @@ const Review = (() => {
     btnApprove.disabled = approved || doc.status !== 'ready';
     btnApprove.textContent = approved ? 'Approved ✓' : 'Approve';
 
-    // Document preview
+    // Document preview (authenticated fetch -> blob URL)
     const preview = document.getElementById('doc-preview');
     const _apiBase = API.getBaseUrl ? API.getBaseUrl() : window.location.origin + '/backend/public/api/v1';
     const dlUrl   = `${_apiBase}/documents/${id}/download`;
-    const token   = API.getToken();
-    if (doc.file_type === 'application/pdf') {
-      preview.innerHTML = `<iframe src="${dlUrl}?token=${encodeURIComponent(token)}"></iframe>`;
-    } else {
-      preview.innerHTML = `<img src="${dlUrl}?token=${encodeURIComponent(token)}" alt="Document" style="max-width:100%" />`;
-    }
+    await loadPreview(preview, dlUrl, doc.file_type);
 
     // Line items
     const liSection = document.getElementById('line-items-section');
@@ -149,10 +145,41 @@ const Review = (() => {
   }
 
   function closeDetail() {
+    clearPreviewUrl();
     currentDocId = null;
     document.getElementById('review-detail').classList.add('hidden');
     document.getElementById('review-list-panel').classList.remove('hidden');
     load();
+  }
+
+  function clearPreviewUrl() {
+    if (currentPreviewUrl) {
+      URL.revokeObjectURL(currentPreviewUrl);
+      currentPreviewUrl = null;
+    }
+  }
+
+  async function loadPreview(previewEl, url, fileType) {
+    clearPreviewUrl();
+    previewEl.innerHTML = '<div style="padding:10px;color:var(--c-text-3)">Loading preview...</div>';
+
+    const token = API.getToken();
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      previewEl.innerHTML = '<div style="padding:10px;color:var(--c-danger)">Preview unavailable.</div>';
+      return;
+    }
+
+    const blob = await res.blob();
+    currentPreviewUrl = URL.createObjectURL(blob);
+    if (fileType === 'application/pdf') {
+      previewEl.innerHTML = `<iframe src="${currentPreviewUrl}" title="Document preview"></iframe>`;
+    } else {
+      previewEl.innerHTML = `<img src="${currentPreviewUrl}" alt="Document" style="max-width:100%" />`;
+    }
   }
 
   async function saveExtracted(e) {
