@@ -14,7 +14,9 @@ require_once $root . '/src/Services/DocumentAIService.php';
 require_once $root . '/src/Services/ExportService.php';
 require_once $root . '/src/Services/JournalService.php';
 require_once $root . '/src/Middleware/AuthMiddleware.php';
+require_once $root . '/src/Middleware/TenantMiddleware.php';
 require_once $root . '/src/Controllers/AuthController.php';
+require_once $root . '/src/Controllers/TenantController.php';
 require_once $root . '/src/Controllers/DocumentController.php';
 require_once $root . '/src/Controllers/AdminController.php';
 require_once $root . '/src/Controllers/AccountController.php';
@@ -25,7 +27,9 @@ require_once $root . '/src/Controllers/ReportController.php';
 use App\Config\Config;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\TenantMiddleware;
 use App\Controllers\AuthController;
+use App\Controllers\TenantController;
 use App\Controllers\DocumentController;
 use App\Controllers\AdminController;
 use App\Controllers\AccountController;
@@ -34,6 +38,12 @@ use App\Controllers\BankController;
 use App\Controllers\ReportController;
 
 Config::load($root . '/.env');
+
+// ── Tenant resolution ──────────────────────────────────────────────────────────
+// Resolves the current organization from hr360_master and injects
+// $_SERVER['ACCOUNTS_TENANT_DB'] for Database::connect() to use.
+// Runs before CORS so that tenant-specific CORS rules could be added later.
+TenantMiddleware::resolve();
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 $allowedOrigins = ['http://localhost', 'http://127.0.0.1', 'http://localhost:3000'];
@@ -65,6 +75,10 @@ foreach (['/Accounts360tech/backend/public', '/backend/public'] as $base) {
 $uri     = '/' . trim($uri, '/');
 
 // ── Router ─────────────────────────────────────────────────────────────────────
+// Tenant routes (public — no auth)
+if ($uri === '/api/v1/tenants/register'         && $method === 'POST') { TenantController::register(); }
+if ($uri === '/api/v1/tenants/check-subdomain'  && $method === 'GET')  { TenantController::checkSubdomain(); }
+
 // Auth routes (public)
 if ($uri === '/api/v1/auth/register'       && $method === 'POST') { AuthController::register(); }
 if ($uri === '/api/v1/auth/login'          && $method === 'POST') { AuthController::login(); }
