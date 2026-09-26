@@ -104,11 +104,13 @@ const Auth = (() => {
     document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
       clearErrors();
-      const email    = document.getElementById('login-email').value.trim();
+      const company  = document.getElementById('login-company').value.trim().toLowerCase();
+      const userName = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
-      if (!email || !password) { setError('auth-error', 'Please enter your email and password.'); return; }
+      if (!company || !userName || !password) { setError('auth-error', 'Please enter company name, username, and password.'); return; }
+      API.setTenantSubdomain(company);
       setLoading('btn-login', true);
-      const res = await API.login(email, password);
+      const res = await API.login(userName, password, company);
       setLoading('btn-login', false);
       if (!res?.success) {
         setError('auth-error', res?.error?.message || 'Login failed. Please try again.');
@@ -165,6 +167,7 @@ const Auth = (() => {
         setError('reg-error', msg);
         return;
       }
+      API.setTenantSubdomain(companyCode);
       API.setTokens(res.data.token, res.data.refresh_token || null);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       App.boot(res.data.user);

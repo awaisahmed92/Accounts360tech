@@ -18,6 +18,7 @@ const API = (() => {
 
   let _token        = localStorage.getItem('token')        || null;
   let _refreshToken = localStorage.getItem('refresh_token') || null;
+  let _tenantSubdomain = localStorage.getItem('tenant_subdomain') || null;
   let _refreshing   = false;
   let _refreshQueue = [];
 
@@ -37,6 +38,12 @@ const API = (() => {
 
   function getToken()        { return _token; }
   function getRefreshToken() { return _refreshToken; }
+  function setTenantSubdomain(code) {
+    _tenantSubdomain = code ? String(code).trim().toLowerCase() : null;
+    if (_tenantSubdomain) localStorage.setItem('tenant_subdomain', _tenantSubdomain);
+    else localStorage.removeItem('tenant_subdomain');
+  }
+  function getTenantSubdomain() { return _tenantSubdomain; }
 
   async function tryRefresh() {
     if (!_refreshToken) return false;
@@ -57,10 +64,12 @@ const API = (() => {
     }
   }
 
-  async function request(method, path, body = null, isFormData = false) {
+  async function request(method, path, body = null, isFormData = false, extraHeaders = {}) {
     const headers = {};
     if (_token) headers['Authorization'] = `Bearer ${_token}`;
     if (!isFormData && body) headers['Content-Type'] = 'application/json';
+    if (_tenantSubdomain) headers['X-Tenant-Subdomain'] = _tenantSubdomain;
+    Object.assign(headers, extraHeaders);
 
     const opts = { method, headers };
     if (body) opts.body = isFormData ? body : JSON.stringify(body);
@@ -92,7 +101,15 @@ const API = (() => {
   }
 
   // ── Auth ──────────────────────────────────────────────────
-  async function login(email, password)         { return request('POST', '/auth/login', { email, password }); }
+  async function login(userNameOrEmail, password, companyCode = null) {
+    const payload = userNameOrEmail.includes('@')
+      ? { email: userNameOrEmail, password }
+      : { user_name: userNameOrEmail, password };
+    const headers = {};
+    const code = companyCode ? String(companyCode).trim().toLowerCase() : null;
+    if (code) headers['X-Tenant-Subdomain'] = code;
+    return request('POST', '/auth/login', payload, false, headers);
+  }
   async function register(name, email, password){ return request('POST', '/auth/register', { name, email, password }); }
   async function registerTenant(payload)        { return request('POST', '/tenants/register', payload); }
   async function checkSubdomain(code)           { return request('GET', `/tenants/check-subdomain?s=${encodeURIComponent(code)}`); }
@@ -150,7 +167,7 @@ const API = (() => {
   function getBaseUrl() { return BASE; }
 
   return {
-    setTokens, clearTokens, getToken, getRefreshToken, getBaseUrl,
+    setTokens, clearTokens, getToken, getRefreshToken, setTenantSubdomain, getTenantSubdomain, getBaseUrl,
     login, register, registerTenant, checkSubdomain, logout, forgotPassword,
     uploadDocuments, listDocuments, getDocument, updateDocument,
     approveDocument, archiveDocument, deleteDocument, downloadDocument, exportDocuments,

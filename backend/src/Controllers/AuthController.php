@@ -47,16 +47,27 @@ class AuthController
     public static function login(): never
     {
         $body = self::json();
+        $userName = trim((string) ($body['user_name'] ?? ''));
+        $email = strtolower(trim((string) ($body['email'] ?? '')));
+        $password = (string) ($body['password'] ?? '');
         $v    = (new Validator())
-            ->required('email',    $body['email']    ?? '')
-            ->required('password', $body['password'] ?? '');
+            ->required('password', $password);
         if ($v->fails()) {
-            Response::error('VALIDATION_ERROR', 'Email and password are required.', 422, $v->errors());
+            Response::error('VALIDATION_ERROR', 'Password is required.', 422, $v->errors());
+        }
+        if ($userName === '' && $email === '') {
+            Response::error('VALIDATION_ERROR', 'UserName (or email) is required.', 422);
         }
 
         $db   = Database::connect();
-        $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([strtolower(trim($body['email']))]);
+        if ($email !== '') {
+            $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+        } else {
+            // Keep backward compatibility with current schema by using `name` as username.
+            $stmt = $db->prepare("SELECT * FROM users WHERE name = ?");
+            $stmt->execute([$userName]);
+        }
         $user = $stmt->fetch();
 
         if (!$user || !$user['is_active']) {
@@ -68,7 +79,7 @@ class AuthController
             Response::error('ACCOUNT_LOCKED', 'Account is temporarily locked. Try again later.', 429);
         }
 
-        if (!password_verify($body['password'], $user['password_hash'])) {
+        if (!password_verify($password, $user['password_hash'])) {
             $count = (int)$user['failed_login_count'] + 1;
             $lock  = $count >= 10 ? date('Y-m-d H:i:s', time() + 900) : null;
             $db->prepare("UPDATE users SET failed_login_count=?, locked_until=? WHERE id=?")
