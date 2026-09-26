@@ -8,7 +8,12 @@ const API = (() => {
   const _origin = window.location.origin;
   const _isLocal = _origin.includes('localhost') || _origin.includes('127.0.0.1');
   const BASE = _isLocal
-    ? 'http://localhost/Accounts360tech/backend/public/api/v1'
+    ? (() => {
+        const path = window.location.pathname;
+        const cut = path.indexOf('/frontend');
+        const root = cut >= 0 ? path.slice(0, cut) : '';
+        return _origin + root + '/backend/public/api/v1';
+      })()
     : _origin + '/backend/public/api/v1';
 
   let _token        = localStorage.getItem('token')        || null;
