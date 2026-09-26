@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounts360tech</title>
+  <link rel="stylesheet" href="assets/css/app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     AUTH SCREENS
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-auth" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-icon">A</div>
+      <span class="brand-name">Accounts360tech</span>
+    </div>
+
+    <!-- Login Form -->
+    <div id="form-login">
+      <h2 class="auth-title">Sign in to your account</h2>
+      <div id="auth-error" class="alert alert-error hidden"></div>
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="login-company">Company Name:</label>
+          <input type="text" id="login-company" placeholder="demo001" required />
+        </div>
+        <div class="field">
+          <label for="login-username">UserName:</label>
+          <input type="text" id="login-username" placeholder="UserName" required />
+        </div>
+        <div class="field">
+          <label for="login-password">Password:</label>
+          <input type="password" id="login-password" placeholder="••••••••" required />
+        </div>
+        <div class="field-row">
+          <label class="checkbox-label"><input type="checkbox" id="remember-me" /> Remember me</label>
+          <a href="#" id="link-forgot" class="link-muted">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-login">Sign in</button>
+      </form>
+      <p class="auth-switch">Don't have an account? <a href="#" id="link-register">Create one</a></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="form-register" class="hidden">
+      <h2 class="auth-title">Create your company account</h2>
+      <div id="reg-error" class="alert alert-error hidden"></div>
+      <form id="register-form" novalidate>
+        <div class="field">
+          <label for="reg-name">UserName *</label>
+          <input type="text" id="reg-name" placeholder="Jane Smith" required />
+        </div>
+        <div class="field">
+          <label for="reg-company-name">Company Name *</label>
+          <input type="text" id="reg-company-name" placeholder="Demo Org 001" required />
+        </div>
+        <div class="field">
+          <label for="reg-company-code">Company Code *</label>
+          <input type="text" id="reg-company-code" placeholder="demo001" required />
+          <small id="reg-code-hint" class="helper-text">Lowercase letters and digits. This identifies your tenant.</small>
+        </div>
+        <div class="field">
+          <label for="reg-designation">Designation *</label>
+          <input type="text" id="reg-designation" placeholder="Software Engineer" required />
+        </div>
+        <div class="field">
+          <label for="reg-industry">Industry *</label>
+          <input type="text" id="reg-industry" placeholder="Technology" required />
+        </div>
+        <div class="field">
+          <label for="reg-country">Select your country *</label>
+          <select id="reg-country" required>
+            <option value="Pakistan" selected>Pakistan</option>
+            <option value="United Arab Emirates">United Arab Emirates</option>
+            <option value="Saudi Arabia">Saudi Arabia</option>
+            <option value="Qatar">Qatar</option>
+            <option value="Oman">Oman</option>
+            <option value="Kuwait">Kuwait</option>
+            <option value="Bahrain">Bahrain</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="United States">United States</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reg-email">Work Email *</label>
+          <input type="email" id="reg-email" placeholder="you@company.com" required />
+        </div>
+        <div class="field">
+          <label for="reg-phone">Mobile Number</label>
+          <input type="text" id="reg-phone" placeholder="+92 300 1234567" />
+        </div>
+        <div class="field">
+          <label for="reg-password">Password *</label>
+          <input type="password" id="reg-password" placeholder="Use at least 6 characters" required />
+        </div>
+        <div class="field">
+          <label for="reg-confirm-password">Confirm Password *</label>
+          <input type="password" id="reg-confirm-password" placeholder="Repeat password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-register">Sign Up</button>
+      </form>
+      <p class="auth-switch">Already have an account? <a href="#" id="link-login">Sign in</a></p>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="form-forgot" class="hidden">
+      <h2 class="auth-title">Reset your password</h2>
+      <div id="forgot-msg" class="hidden"></div>
+      <form id="forgot-form" novalidate>
+        <div class="field">
+          <label for="forgot-email">Email address</label>
+          <input type="email" id="forgot-email" placeholder="you@company.com" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Send reset link</button>
+      </form>
+      <p class="auth-switch"><a href="#" id="link-back-login">← Back to sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL (authenticated)
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-app" class="hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">A</div>
+      <span class="brand-name">Accounts360</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item" data-view="upload">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/></svg>
+        Upload
+      </a>
+      <a href="#" class="nav-item" data-view="review">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z"/></svg>
+        Review Queue
+        <span class="badge" id="review-badge" style="display:none"></span>
+      </a>
+      <a href="#" class="nav-item" data-view="ledger">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+        Ledger
+      </a>
+      <div class="nav-section-label">Bookkeeping</div>
+      <a href="#" class="nav-item" data-view="accounts">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+        Accounts
+      </a>
+      <a href="#" class="nav-item" data-view="journal">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z"/></svg>
+        Journal
+      </a>
+      <a href="#" class="nav-item" data-view="bank">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/></svg>
+        Bank
+      </a>
+      <a href="#" class="nav-item" data-view="reports">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z"/></svg>
+        Reports
+      </a>
+      <a href="#" class="nav-item nav-item--admin hidden" data-view="admin">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"/></svg>
+        Admin
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar-letter">U</div>
+        <div class="user-info">
+          <span class="user-name" id="sidebar-user-name">User</span>
+          <span class="user-role" id="sidebar-user-role">user</span>
+        </div>
+      </div>
+      <button class="btn-icon" id="btn-logout" title="Sign out">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content area -->
+  <main class="main-content">
+
+    <!-- ── Upload View ─────────────────────────────────────── -->
+    <div id="view-upload" class="view hidden">
+      <div class="page-header">
+        <h1>Upload Documents</h1>
+        <p class="page-subtitle">Drag & drop receipts and invoices — AI will extract data automatically</p>
+      </div>
+
+      <div id="drop-zone" class="drop-zone">
+        <div class="drop-zone-inner">
+          <svg class="drop-icon" viewBox="0 0 48 48" fill="none"><path d="M24 8L24 32M24 8L16 16M24 8L32 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 36H40" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+          <p class="drop-title">Drop files here or <label for="file-input" class="link-accent">browse</label></p>
+          <p class="drop-sub">PDF, PNG, JPEG — up to 20 MB each, max 10 files</p>
+          <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg" class="sr-only" />
+        </div>
+      </div>
+
+      <div id="upload-queue" class="upload-queue hidden">
+        <div class="section-header">
+          <h3>Upload queue</h3>
+          <button class="btn btn-primary btn-sm" id="btn-upload-all">Upload all</button>
+        </div>
+        <div id="upload-file-list"></div>
+      </div>
+
+      <div id="recent-uploads" class="recent-uploads">
+        <div class="section-header">
+          <h3>Recent uploads</h3>
+          <a href="#" class="link-accent" data-view="review">View review queue →</a>
+        </div>
+        <div id="recent-list">
+          <div class="empty-state">No uploads yet. Start by dropping a file above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Review View ─────────────────────────────────────── -->
+    <div id="view-review" class="view hidden">
+      <div class="page-header">
+        <h1>Review Queue</h1>
+        <p class="page-subtitle">Verify AI-extracted data and approve documents for the ledger</p>
+      </div>
+
+      <!-- Review table -->
+      <div id="review-list-panel">
+        <div class="toolbar">
+          <input type="text" id="review-search" placeholder="Search supplier…" class="input-search" />
+          <select id="review-status-filter" class="select-filter">
+            <option value="">All status</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="ready">Ready for review</option>
+            <option value="error">Error</option>
+          </select>
+          <div class="toolbar-spacer"></div>
+        </div>
+        <div id="review-table-wrap" class="table-wrap">
+          <table class="data-table" id="review-table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Supplier</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="review-tbody"></tbody>
+          </table>
+          <div id="review-empty" class="empty-state hidden">No documents found.</div>
+        </div>
+        <div id="review-pagination" class="pagination"></div>
+      </div>
+
+      <!-- Review detail panel (split screen) -->
+      <div id="review-detail" class="review-detail hidden">
+        <div class="detail-header">
+          <button class="btn btn-ghost btn-sm" id="btn-back-review">← Back to queue</button>
+          <div class="detail-actions">
+            <button class="btn btn-ghost btn-sm" id="btn-archive-doc">Archive</button>
+            <button class="btn btn-danger btn-sm" id="btn-delete-doc">Delete</button>
+            <button class="btn btn-primary btn-sm" id="btn-approve-doc">Approve</button>
+          </div>
+        </div>
+
+        <div id="dup-warning" class="alert alert-warning hidden"></div>
+
+        <div class="split-layout">
+          <!-- Left: document preview -->
+          <div class="split-left">
+            <div class="panel-title">Document Preview</div>
+            <div id="doc-preview" class="doc-preview">
+              <div class="preview-loading">Loading preview…</div>
+            </div>
+          </div>
+
+          <!-- Right: extracted data form -->
+          <div class="split-right">
+            <div class="panel-title">Extracted Data
+              <span class="confidence-badge" id="conf-badge"></span>
+            </div>
+            <form id="extracted-form" class="extracted-form">
+              <div class="field">
+                <label>Supplier / Merchant</label>
+                <input type="text" id="f-supplier" placeholder="e.g. Starbucks" />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Document Date</label>
+                  <input type="date" id="f-date" />
+                </div>
+                <div class="field">
+                  <label>Currency</label>
+                  <select id="f-currency">
+                    <option>USD</option><option>EUR</option><option>GBP</option>
+                    <option>PKR</option><option>AED</option><option>SAR</option>
+                    <option>CAD</option><option>AUD</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Total Amount</label>
+                  <input type="number" id="f-total" step="0.01" placeholder="0.00" />
+                </div>
+                <div class="field">
+                  <label>Tax / VAT Amount</label>
+                  <input type="number" id="f-tax" step="0.01" placeholder="0.00" />
+                </div>
+              </div>
+              <div class="field">
+                <label>Category</label>
+                <select id="f-category">
+                  <option>Meals & Entertainment</option>
+                  <option>Travel & Transport</option>
+                  <option>Software & Subscriptions</option>
+                  <option>Advertising & Marketing</option>
+                  <option>Office Supplies</option>
+                  <option>Utilities</option>
+                  <option>Professional Services</option>
+                  <option>Equipment & Hardware</option>
+                  <option>Rent & Facilities</option>
+                  <option>Other / Uncategorized</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-secondary btn-sm">Save changes</button>
+              <span class="save-indicator hidden" id="save-indicator">Saved ✓</span>
+            </form>
+
+            <!-- Line items -->
+            <div class="line-items-section" id="line-items-section" style="display:none">
+              <div class="panel-title" style="margin-top:24px">Line Items</div>
+              <table class="data-table data-table--compact">
+                <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+                <tbody id="line-items-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Ledger View ─────────────────────────────────────── -->
+    <div id="view-ledger" class="view hidden">
+      <div class="page-header">
+        <h1>Transaction Ledger</h1>
+        <p class="page-subtitle">All approved and processed receipts & invoices</p>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="ledger-search" placeholder="Search supplier…" class="input-search" />
+        <select id="ledger-category" class="select-filter">
+          <option value="">All categories</option>
+          <option>Meals & Entertainment</option>
+          <option>Travel & Transport</option>
+          <option>Software & Subscriptions</option>
+          <option>Advertising & Marketing</option>
+          <option>Office Supplies</option>
+          <option>Utilities</option>
+          <option>Professional Services</option>
+          <option>Equipment & Hardware</option>
+          <option>Rent & Facilities</option>
+          <option>Other / Uncategorized</option>
+        </select>
+        <input type="date" id="ledger-from" class="input-date" title="From date" />
+        <input type="date" id="ledger-to"   class="input-date" title="To date" />
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-secondary btn-sm" id="btn-export">Export CSV</button>
+      </div>
+
+      <div id="ledger-summary" class="ledger-summary hidden">
+        <div class="summary-card">
+          <span class="summary-label">Total documents</span>
+          <span class="summary-value" id="sum-total">—</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Total spend</span>
+          <span class="summary-value" id="sum-spend">—</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Total tax</span>
+          <span class="summary-value" id="sum-tax">—</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">Approved</span>
+          <span class="summary-value" id="sum-approved">—</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table sortable" id="ledger-table">
+          <thead>
+            <tr>
+              <th data-col="document_date">Date <span class="sort-icon">⇅</span></th>
+              <th data-col="supplier_name">Supplier <span class="sort-icon">⇅</span></th>
+              <th>Category</th>
+              <th>Currency</th>
+              <th data-col="total_amount" class="col-num">Total <span class="sort-icon">⇅</span></th>
+              <th class="col-num">Tax</th>
+              <th>Status</th>
+              <th class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-tbody"></tbody>
+        </table>
+        <div id="ledger-empty" class="empty-state hidden">No records found. Upload and approve documents to populate the ledger.</div>
+      </div>
+      <div id="ledger-pagination" class="pagination"></div>
+    </div>
+
+    <!-- ── Admin View ──────────────────────────────────────── -->
+    <div id="view-admin" class="view hidden">
+      <div class="page-header">
+        <h1>Admin Panel</h1>
+        <p class="page-subtitle">System health, user management, and processing logs</p>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stats-grid" id="admin-stats-grid">
+        <div class="stat-card"><span class="stat-label">Documents today</span><span class="stat-value" id="stat-today">—</span></div>
+        <div class="stat-card"><span class="stat-label">Total documents</span><span class="stat-value" id="stat-total">—</span></div>
+        <div class="stat-card"><span class="stat-label">Error rate</span><span class="stat-value danger" id="stat-error-rate">—</span></div>
+        <div class="stat-card"><span class="stat-label">Avg AI latency</span><span class="stat-value" id="stat-latency">—</span></div>
+        <div class="stat-card"><span class="stat-label">Queue pending</span><span class="stat-value" id="stat-queue">—</span></div>
+        <div class="stat-card"><span class="stat-label">Total users</span><span class="stat-value" id="stat-users">—</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="users">Users</button>
+        <button class="tab" data-tab="logs">Processing Logs</button>
+      </div>
+
+      <div id="tab-users" class="tab-content">
+        <div class="table-wrap">
+          <table class="data-table" id="admin-users-table">
+            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Documents</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-users-tbody"></tbody>
+          </table>
+        </div>
+        <div id="admin-users-pagination" class="pagination"></div>
+      </div>
+
+      <div id="tab-logs" class="tab-content hidden">
+        <div class="table-wrap">
+          <table class="data-table" id="admin-logs-table">
+            <thead><tr><th>Document</th><th>User</th><th>Attempt</th><th>HTTP</th><th>Latency</th><th>Status</th><th>Error</th><th>Time</th></tr></thead>
+            <tbody id="admin-logs-tbody"></tbody>
+          </table>
+        </div>
+        <div id="admin-logs-pagination" class="pagination"></div>
+      </div>
+    </div>
+
+    <!-- ── Accounts View ──────────────────────────────────── -->
+    <div id="view-accounts" class="view hidden">
+      <div class="page-header">
+        <h1>Chart of Accounts</h1>
+        <p class="page-subtitle">Manage your account codes and classifications for double-entry bookkeeping</p>
+      </div>
+      <div class="toolbar">
+        <select id="acct-type-filter" class="select-filter">
+          <option value="">All types</option>
+          <option value="Asset">Asset</option>
+          <option value="Liability">Liability</option>
+          <option value="Equity">Equity</option>
+          <option value="Income">Income</option>
+          <option value="Expense">Expense</option>
+        </select>
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-primary btn-sm" id="btn-new-account">+ New Account</button>
+      </div>
+
+      <!-- New account form (hidden by default) -->
+      <div id="new-account-form" class="bk-card hidden" style="margin-bottom:20px">
+        <div class="bk-card-title">Add Account</div>
+        <div class="field-row">
+          <div class="field"><label>Code</label><input type="text" id="na-code" placeholder="e.g. 6001" maxlength="20"/></div>
+          <div class="field"><label>Name</label><input type="text" id="na-name" placeholder="e.g. Insurance Expense"/></div>
+          <div class="field"><label>Type</label>
+            <select id="na-type">
+              <option value="Asset">Asset</option><option value="Liability">Liability</option>
+              <option value="Equity">Equity</option><option value="Income">Income</option>
+              <option value="Expense" selected>Expense</option>
+            </select>
+          </div>
+          <div class="field"><label>Sub-type</label><input type="text" id="na-subtype" placeholder="e.g. Operating Expense"/></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary btn-sm" id="btn-save-account">Save Account</button>
+          <button class="btn btn-ghost btn-sm" id="btn-cancel-account">Cancel</button>
+        </div>
+      </div>
+
+      <div id="accounts-container"></div>
+    </div>
+
+    <!-- ── Journal View ────────────────────────────────────── -->
+    <div id="view-journal" class="view hidden">
+      <div class="page-header">
+        <h1>Journal Entries</h1>
+        <p class="page-subtitle">Double-entry bookkeeping — every approved document auto-generates a posted entry</p>
+      </div>
+
+      <div id="journal-list-panel">
+        <div class="toolbar">
+          <input type="text" id="journal-search" placeholder="Search reference or description…" class="input-search" />
+          <select id="journal-status-filter" class="select-filter">
+            <option value="">All status</option>
+            <option value="draft">Draft</option>
+            <option value="posted">Posted</option>
+          </select>
+          <input type="date" id="journal-from" class="input-date" title="From date" />
+          <input type="date" id="journal-to"   class="input-date" title="To date" />
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary btn-sm" id="btn-new-journal">+ Manual Entry</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="journal-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Date</th><th>Reference</th><th>Description</th>
+                <th class="col-num">Amount</th><th>Lines</th><th>Status</th><th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="journal-tbody"></tbody>
+          </table>
+          <div id="journal-empty" class="empty-state hidden">No journal entries yet. Approve a document to auto-generate one.</div>
+        </div>
+        <div id="journal-pagination" class="pagination"></div>
+      </div>
+
+      <!-- Journal detail / new entry panel -->
+      <div id="journal-detail" class="hidden">
+        <div class="detail-header">
+          <button class="btn btn-ghost btn-sm" id="btn-back-journal">← Back to Journal</button>
+          <div class="detail-actions">
+            <button class="btn btn-primary btn-sm" id="btn-post-entry" style="display:none">Post Entry</button>
+            <button class="btn btn-danger btn-sm"  id="btn-delete-entry" style="display:none">Delete</button>
+          </div>
+        </div>
+        <div class="bk-card">
+          <div class="bk-card-title" id="journal-detail-title">Journal Entry</div>
+          <div class="field-row" style="margin-bottom:16px">
+            <div class="field"><label>Date</label><input type="date" id="je-date" /></div>
+            <div class="field"><label>Reference</label><input type="text" id="je-ref" placeholder="e.g. JE-001"/></div>
+            <div class="field" style="grid-column:span 2"><label>Description</label><input type="text" id="je-desc" placeholder="Description"/></div>
+          </div>
+
+          <!-- Lines table -->
+          <div class="panel-title" style="margin-bottom:12px">Debit / Credit Lines</div>
+          <table class="data-table" id="je-lines-table">
+            <thead>
+              <tr><th>Account</th><th>Description</th><th class="col-num">Debit</th><th class="col-num">Credit</th><th></th></tr>
+            </thead>
+            <tbody id="je-lines-tbody"></tbody>
+          </table>
+          <div class="je-totals" id="je-totals"></div>
+          <div id="je-balance-msg" class="alert hidden" style="margin-top:12px"></div>
+          <div style="margin-top:12px;display:flex;gap:8px" id="je-edit-controls">
+            <button class="btn btn-ghost btn-sm" id="btn-add-line">+ Add Line</button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="btn-save-draft">Save Draft</button>
+            <button class="btn btn-primary btn-sm"   id="btn-save-post">Save & Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Bank View ───────────────────────────────────────── -->
+    <div id="view-bank" class="view hidden">
+      <div class="page-header">
+        <h1>Bank Accounts</h1>
+        <p class="page-subtitle">Manage bank accounts, import statements, and reconcile transactions</p>
+      </div>
+
+      <div id="bank-accounts-panel">
+        <div class="toolbar">
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary btn-sm" id="btn-new-bank">+ Add Bank Account</button>
+        </div>
+
+        <!-- New bank form -->
+        <div id="new-bank-form" class="bk-card hidden" style="margin-bottom:20px">
+          <div class="bk-card-title">Add Bank Account</div>
+          <div class="field-row">
+            <div class="field"><label>Account Name *</label><input type="text" id="nb-name" placeholder="e.g. Business Checking"/></div>
+            <div class="field"><label>Bank Name</label><input type="text" id="nb-bank" placeholder="e.g. Chase"/></div>
+            <div class="field"><label>Account Number</label><input type="text" id="nb-number" placeholder="Last 4 digits"/></div>
+            <div class="field"><label>Currency</label>
+              <select id="nb-currency">
+                <option>USD</option><option>EUR</option><option>GBP</option>
+                <option>PKR</option><option>AED</option><option>CAD</option>
+              </select>
+            </div>
+            <div class="field"><label>Opening Balance</label><input type="number" id="nb-opening" value="0" step="0.01"/></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-primary btn-sm" id="btn-save-bank">Save Account</button>
+            <button class="btn btn-ghost btn-sm"   id="btn-cancel-bank">Cancel</button>
+          </div>
+        </div>
+
+        <div id="bank-cards-grid" class="bank-cards-grid"></div>
+      </div>
+
+      <!-- Transactions panel -->
+      <div id="bank-txn-panel" class="hidden">
+        <div class="detail-header">
+          <button class="btn btn-ghost btn-sm" id="btn-back-bank">← Back to Accounts</button>
+          <div class="detail-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-import-csv">Import CSV</button>
+            <button class="btn btn-primary btn-sm"   id="btn-reconcile-selected">Reconcile Selected</button>
+          </div>
+        </div>
+        <div class="bk-card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="bk-card-title" id="bank-txn-title">Transactions</div>
+              <div id="bank-balance-display" style="font-size:22px;font-weight:700;margin-top:4px"></div>
+            </div>
+            <div style="display:flex;gap:16px">
+              <div class="summary-card" style="min-width:120px"><span class="summary-label">Unreconciled</span><span class="summary-value" id="bank-unrec-count" style="font-size:18px">—</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- CSV import drop zone -->
+        <div id="csv-drop-zone" class="csv-drop-zone hidden">
+          <p>Drop a CSV bank statement here or <label for="csv-file-input" class="link-accent">browse</label></p>
+          <p style="font-size:12px;color:var(--c-text-3);margin-top:4px">Expected columns: date, description, debit, credit (or amount)</p>
+          <input type="file" id="csv-file-input" accept=".csv" class="sr-only" />
+        </div>
+        <div class="toolbar" style="margin-top:12px">
+          <select id="txn-reconciled-filter" class="select-filter">
+            <option value="">All transactions</option>
+            <option value="0">Unreconciled</option>
+            <option value="1">Reconciled</option>
+          </select>
+          <input type="date" id="txn-from" class="input-date" /><input type="date" id="txn-to" class="input-date" />
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="txn-table">
+            <thead>
+              <tr><th><input type="checkbox" id="txn-check-all" /></th><th>Date</th><th>Description</th><th>Reference</th><th class="col-num">Debit</th><th class="col-num">Credit</th><th>Status</th></tr>
+            </thead>
+            <tbody id="txn-tbody"></tbody>
+          </table>
+          <div id="txn-empty" class="empty-state hidden">No transactions. Import a CSV bank statement.</div>
+        </div>
+        <div id="txn-pagination" class="pagination"></div>
+      </div>
+    </div>
+
+    <!-- ── Reports View ────────────────────────────────────── -->
+    <div id="view-reports" class="view hidden">
+      <div class="page-header">
+        <h1>Financial Reports</h1>
+        <p class="page-subtitle">Profit &amp; Loss, Balance Sheet, and Trial Balance from your journal entries</p>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab active" data-report="pl">Profit &amp; Loss</button>
+        <button class="tab" data-report="bs">Balance Sheet</button>
+        <button class="tab" data-report="tb">Trial Balance</button>
+      </div>
+
+      <!-- Date controls -->
+      <div class="report-controls" id="report-period-controls">
+        <div class="toolbar" style="margin-bottom:0">
+          <label style="font-size:13px;font-weight:500;color:var(--c-text-2)">Period:</label>
+          <select id="report-period-preset" class="select-filter">
+            <option value="this_month">This Month</option>
+            <option value="last_month">Last Month</option>
+            <option value="this_quarter">This Quarter</option>
+            <option value="this_year" selected>This Year</option>
+            <option value="custom">Custom Range</option>
+          </select>
+          <input type="date" id="report-from" class="input-date" />
+          <input type="date" id="report-to"   class="input-date" />
+          <button class="btn btn-primary btn-sm" id="btn-run-report">Run Report</button>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-secondary btn-sm" id="btn-print-report">Print</button>
+        </div>
+      </div>
+      <div id="report-as-of-controls" class="toolbar hidden" style="margin-bottom:0">
+        <label style="font-size:13px;font-weight:500;color:var(--c-text-2)">As of:</label>
+        <input type="date" id="report-as-of" class="input-date" />
+        <button class="btn btn-primary btn-sm" id="btn-run-bs">Run Report</button>
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-secondary btn-sm" id="btn-print-bs">Print</button>
+      </div>
+
+      <!-- Report output -->
+      <div id="report-output" class="report-output" style="margin-top:20px"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- Scripts -->
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/upload.js"></script>
+<script src="assets/js/review.js"></script>
+<script src="assets/js/ledger.js"></script>
+<script src="assets/js/admin.js"></script>
+<script src="assets/js/accounts.js"></script>
+<script src="assets/js/journal.js"></script>
+<script src="assets/js/bank.js"></script>
+<script src="assets/js/reports.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
