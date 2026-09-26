@@ -89,6 +89,8 @@ const API = (() => {
   // ── Auth ──────────────────────────────────────────────────
   async function login(email, password)         { return request('POST', '/auth/login', { email, password }); }
   async function register(name, email, password){ return request('POST', '/auth/register', { name, email, password }); }
+  async function registerTenant(payload)        { return request('POST', '/tenants/register', payload); }
+  async function checkSubdomain(code)           { return request('GET', `/tenants/check-subdomain?s=${encodeURIComponent(code)}`); }
   async function logout(refreshToken)           { return request('POST', '/auth/logout', { refresh_token: refreshToken }); }
   async function forgotPassword(email)          { return request('POST', '/auth/forgot-password', { email }); }
 
@@ -144,7 +146,7 @@ const API = (() => {
 
   return {
     setTokens, clearTokens, getToken, getRefreshToken, getBaseUrl,
-    login, register, logout, forgotPassword,
+    login, register, registerTenant, checkSubdomain, logout, forgotPassword,
     uploadDocuments, listDocuments, getDocument, updateDocument,
     approveDocument, archiveDocument, deleteDocument, downloadDocument, exportDocuments,
     adminUsers, adminUpdateUser, adminLogs, adminStats,

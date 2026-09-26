@@ -32,6 +32,28 @@ class TenantMiddleware
      */
     public static function resolve(): array
     {
+        // Public routes that must work before a tenant exists.
+        // This is required for organization self-signup.
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        foreach (['/Accounts360tech/backend/public', '/backend/public'] as $base) {
+            if (str_starts_with($path, $base)) {
+                $path = substr($path, strlen($base));
+                break;
+            }
+        }
+        $path = '/' . trim($path, '/');
+        if (
+            ($path === '/api/v1/tenants/register') ||
+            ($path === '/api/v1/tenants/check-subdomain') ||
+            ($path === '/api/v1/health') ||
+            ($path === '/')
+        ) {
+            $fallbackDb = \App\Config\Config::get('DB_NAME', 'accounts360tech');
+            $_SERVER['ACCOUNTS_TENANT_DB'] = $fallbackDb;
+            $_SERVER['ACCOUNTS_TENANT_ID'] = 0;
+            return ['id' => 0, 'subdomain' => 'public', 'accounts_db_name' => $fallbackDb];
+        }
+
         $subdomain = self::detectSubdomain();
 
         if ($subdomain === null) {

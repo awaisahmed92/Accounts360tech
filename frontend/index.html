@@ -45,22 +45,63 @@
 
     <!-- Register Form -->
     <div id="form-register" class="hidden">
-      <h2 class="auth-title">Create your account</h2>
+      <h2 class="auth-title">Create your company account</h2>
       <div id="reg-error" class="alert alert-error hidden"></div>
       <form id="register-form" novalidate>
         <div class="field">
-          <label for="reg-name">Full name</label>
+          <label for="reg-name">UserName *</label>
           <input type="text" id="reg-name" placeholder="Jane Smith" required />
         </div>
         <div class="field">
-          <label for="reg-email">Email address</label>
+          <label for="reg-company-name">Company Name *</label>
+          <input type="text" id="reg-company-name" placeholder="Demo Org 001" required />
+        </div>
+        <div class="field">
+          <label for="reg-company-code">Company Code *</label>
+          <input type="text" id="reg-company-code" placeholder="demo001" required />
+          <small id="reg-code-hint" class="helper-text">Lowercase letters and digits. This identifies your tenant.</small>
+        </div>
+        <div class="field">
+          <label for="reg-designation">Designation *</label>
+          <input type="text" id="reg-designation" placeholder="Software Engineer" required />
+        </div>
+        <div class="field">
+          <label for="reg-industry">Industry *</label>
+          <input type="text" id="reg-industry" placeholder="Technology" required />
+        </div>
+        <div class="field">
+          <label for="reg-country">Select your country *</label>
+          <select id="reg-country" required>
+            <option value="Pakistan" selected>Pakistan</option>
+            <option value="United Arab Emirates">United Arab Emirates</option>
+            <option value="Saudi Arabia">Saudi Arabia</option>
+            <option value="Qatar">Qatar</option>
+            <option value="Oman">Oman</option>
+            <option value="Kuwait">Kuwait</option>
+            <option value="Bahrain">Bahrain</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="United States">United States</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reg-email">Work Email *</label>
           <input type="email" id="reg-email" placeholder="you@company.com" required />
         </div>
         <div class="field">
-          <label for="reg-password">Password</label>
-          <input type="password" id="reg-password" placeholder="Min 8 chars, 1 uppercase, 1 number" required />
+          <label for="reg-phone">Mobile Number</label>
+          <input type="text" id="reg-phone" placeholder="+92 300 1234567" />
         </div>
-        <button type="submit" class="btn btn-primary btn-full" id="btn-register">Create account</button>
+        <div class="field">
+          <label for="reg-password">Password *</label>
+          <input type="password" id="reg-password" placeholder="Use at least 6 characters" required />
+        </div>
+        <div class="field">
+          <label for="reg-confirm-password">Confirm Password *</label>
+          <input type="password" id="reg-confirm-password" placeholder="Repeat password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-register">Sign Up</button>
       </form>
       <p class="auth-switch">Already have an account? <a href="#" id="link-login">Sign in</a></p>
     </div>

@@ -27,28 +27,48 @@ class TenantController
     {
         $body = self::json();
 
+        // Accept both Accounts payload keys and HR-style signup keys.
+        $orgNameRaw     = $body['org_name'] ?? $body['company_name'] ?? '';
+        $subdomainRaw   = $body['subdomain'] ?? $body['company_code'] ?? '';
+        $nameRaw        = $body['name'] ?? $body['user_name'] ?? '';
+        $designationRaw = $body['designation'] ?? '';
+        $industryRaw    = $body['industry'] ?? '';
+        $countryRaw     = $body['country'] ?? '';
+        $phoneRaw       = $body['phone'] ?? '';
+
         // Validate input
         $v = (new Validator())
-            ->required('org_name',   $body['org_name']   ?? '')
-            ->required('subdomain',  $body['subdomain']  ?? '')
-            ->required('name',       $body['name']       ?? '')
+            ->required('org_name',   (string) $orgNameRaw)
+            ->required('subdomain',  (string) $subdomainRaw)
+            ->required('name',       (string) $nameRaw)
+            ->required('designation',(string) $designationRaw)
+            ->required('industry',   (string) $industryRaw)
+            ->required('country',    (string) $countryRaw)
             ->required('email',      $body['email']      ?? '')
             ->email('email',         $body['email']      ?? '')
             ->required('password',   $body['password']   ?? '')
             ->password('password',   $body['password']   ?? '')
-            ->maxLength('org_name',  $body['org_name']   ?? '', 191)
-            ->maxLength('subdomain', $body['subdomain']  ?? '', 100)
-            ->maxLength('name',      $body['name']       ?? '', 100);
+            ->maxLength('org_name',  (string) $orgNameRaw, 191)
+            ->maxLength('subdomain', (string) $subdomainRaw, 100)
+            ->maxLength('name',      (string) $nameRaw, 100)
+            ->maxLength('designation', (string) $designationRaw, 191)
+            ->maxLength('industry',  (string) $industryRaw, 120)
+            ->maxLength('country',   (string) $countryRaw, 120)
+            ->maxLength('phone',     (string) $phoneRaw, 60);
 
         if ($v->fails()) {
             Response::error('VALIDATION_ERROR', 'Validation failed.', 422, $v->errors());
         }
 
-        $orgName   = trim($body['org_name']);
-        $subdomain = strtolower(preg_replace('/[^a-z0-9\-]/', '', strtolower(trim($body['subdomain']))));
-        $adminName  = trim($body['name']);
+        $orgName   = trim((string) $orgNameRaw);
+        $subdomain = strtolower(preg_replace('/[^a-z0-9\-]/', '', strtolower(trim((string) $subdomainRaw))));
+        $adminName = trim((string) $nameRaw);
         $adminEmail = strtolower(trim($body['email']));
         $password   = $body['password'];
+        $designation = trim((string) $designationRaw);
+        $industry = trim((string) $industryRaw);
+        $country = trim((string) $countryRaw);
+        $phone = trim((string) $phoneRaw);
 
         if ($subdomain === '') {
             Response::error('VALIDATION_ERROR', 'Subdomain may only contain lowercase letters, digits, and hyphens.', 422);
@@ -68,8 +88,9 @@ class TenantController
         $stmt = $master->prepare(
             "INSERT INTO tenants
                 (name, subdomain, db_host, db_name, accounts_db_name, db_user, db_password,
-                 status, hr_app, accounts_app, contact_name, contact_email, source)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 1, ?, ?, 'self_signup')"
+                 status, hr_app, accounts_app, company_code, industry, country,
+                 contact_name, contact_designation, contact_email, contact_phone, source)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 1, ?, ?, ?, ?, ?, ?, ?, 'self_signup')"
         );
         $dbHost = Config::get('DB_HOST', '127.0.0.1');
         $dbUser = Config::get('DB_USER', 'root');
@@ -82,8 +103,13 @@ class TenantController
             $tenantDbName,       // accounts_db_name
             $dbUser,
             $dbPass,
+            $subdomain,
+            $industry,
+            $country,
             $adminName,
+            $designation,
             $adminEmail,
+            $phone !== '' ? $phone : null,
         ]);
         $tenantId = (int) $master->lastInsertId();
 
