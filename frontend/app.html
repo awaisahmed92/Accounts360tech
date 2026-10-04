@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accounts360tech</title>
-  <link rel="stylesheet" href="assets/css/app.css" />
+  <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="assets/css/app.css?v=20261004c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -17,7 +18,7 @@
 <div id="screen-auth" class="auth-screen hidden">
   <div class="auth-card">
     <div class="auth-brand">
-      <div class="brand-icon">A</div>
+      <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="36" height="36" />
       <span class="brand-name">Accounts360tech</span>
     </div>
 
@@ -95,7 +96,17 @@
         </div>
         <div class="field">
           <label for="reg-phone">Mobile Number</label>
-          <input type="text" id="reg-phone" placeholder="+92 300 1234567" />
+          <div class="phone-row">
+            <div class="flag-picker">
+              <button type="button" class="flag-picker-btn" id="reg-phone-code-btn" aria-label="Country code" aria-haspopup="listbox" aria-expanded="false">
+                <img id="reg-phone-flag" alt="United States" width="22" height="16" src="assets/flags/us.svg" />
+                <span id="reg-phone-dial">+1</span>
+              </button>
+              <div class="flag-picker-menu hidden" id="reg-phone-menu" role="listbox"></div>
+              <input type="hidden" id="reg-phone-code" value="US" data-dial="+1" />
+            </div>
+            <input type="tel" id="reg-phone" placeholder="202 555 0123" inputmode="tel" />
+          </div>
         </div>
         <div class="field">
           <label for="reg-password">Password *</label>
@@ -104,6 +115,15 @@
         <div class="field">
           <label for="reg-confirm-password">Confirm Password *</label>
           <input type="password" id="reg-confirm-password" placeholder="Repeat password" required />
+        </div>
+        <div class="field">
+          <label for="reg-captcha">Verification code *</label>
+          <div class="captcha-row">
+            <img id="reg-captcha-image" alt="Verification code" width="168" height="56" />
+            <button type="button" class="btn" id="reg-captcha-refresh">New code</button>
+          </div>
+          <input type="text" id="reg-captcha" placeholder="Type the characters" maxlength="8" autocomplete="off" required />
+          <input type="hidden" id="reg-captcha-token" />
         </div>
         <button type="submit" class="btn btn-primary btn-full" id="btn-register">Sign Up</button>
       </form>
@@ -134,7 +154,7 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">A</div>
+      <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="36" height="36" />
       <span class="brand-name">Accounts360</span>
     </div>
     <nav class="sidebar-nav">
@@ -714,8 +734,8 @@
 <div id="toast" class="toast hidden"></div>
 
 <!-- Scripts -->
-<script src="assets/js/api.js"></script>
-<script src="assets/js/auth.js"></script>
+<script src="assets/js/api.js?v=20261004c"></script>
+<script src="assets/js/auth.js?v=20261004c"></script>
 <script src="assets/js/upload.js"></script>
 <script src="assets/js/review.js"></script>
 <script src="assets/js/ledger.js"></script>

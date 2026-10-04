@@ -45,6 +45,7 @@ class TenantMiddleware
         if (
             ($path === '/api/v1/tenants/register') ||
             ($path === '/api/v1/tenants/check-subdomain') ||
+            ($path === '/api/v1/signup/captcha') ||
             ($path === '/api/v1/health') ||
             ($path === '/')
         ) {

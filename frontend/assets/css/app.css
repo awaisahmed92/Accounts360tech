@@ -64,10 +64,8 @@ body { font-family: var(--font); font-size: 14px; color: var(--c-text); backgrou
 }
 .brand-icon {
   width: 36px; height: 36px;
-  background: var(--c-accent);
-  border-radius: var(--r-sm);
-  color: #fff; font-weight: 700; font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
+  display: block;
+  object-fit: contain;
 }
 .brand-name { font-size: 16px; font-weight: 700; color: var(--c-text); }
 
@@ -98,6 +96,35 @@ select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--c-accent); }
 input::placeholder { color: var(--c-text-3); }
 
+.phone-row { display: flex; gap: 8px; align-items: stretch; }
+.phone-row > input { flex: 1; min-width: 0; }
+.flag-picker { position: relative; flex: none; }
+.flag-picker-btn {
+  display: flex; align-items: center; gap: 6px; height: 100%;
+  padding: 8px 10px; border: 1px solid var(--c-border); border-radius: var(--r-sm);
+  background: var(--c-surface); color: var(--c-text); font: inherit; font-weight: 700; cursor: pointer;
+}
+.flag-picker-btn img { width: 22px; height: 16px; object-fit: cover; border-radius: 2px; display: block; }
+.flag-picker-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; width: 280px;
+  max-height: 280px; overflow: auto; padding: 8px; background: var(--c-surface);
+  border: 1px solid var(--c-border); border-radius: var(--r-sm); box-shadow: 0 8px 24px rgba(22, 35, 58, .12);
+}
+.flag-picker-search {
+  width: 100%; margin-bottom: 6px; padding: 8px 10px; box-sizing: border-box;
+  border: 1px solid var(--c-border); border-radius: var(--r-sm); font: inherit;
+}
+.flag-picker-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 6px;
+  border: 0; background: transparent; color: var(--c-text); font: inherit; text-align: left; cursor: pointer; border-radius: 6px;
+}
+.flag-picker-item:hover, .flag-picker-item[aria-selected="true"] { background: #eaf3fb; }
+.flag-picker-item img { width: 22px; height: 16px; object-fit: cover; border-radius: 2px; flex: none; }
+.flag-picker-item span { flex: 1; }
+.flag-picker-item strong { font-size: 13px; }
+.captcha-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.captcha-row img { height: 56px; width: 168px; border-radius: 8px; background: #eaf3fb; border: 1px solid var(--c-border, #d5dbe5); }
+.captcha-row .btn { width: auto; padding: 8px 12px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--c-text-2); cursor: pointer; }
 .checkbox-label input { width: auto; }

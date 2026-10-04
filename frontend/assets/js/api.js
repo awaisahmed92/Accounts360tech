@@ -112,7 +112,12 @@ const API = (() => {
   }
   async function register(name, email, password){ return request('POST', '/auth/register', { name, email, password }); }
   async function registerTenant(payload)        { return request('POST', '/tenants/register', payload); }
-  async function checkSubdomain(code)           { return request('GET', `/tenants/check-subdomain?s=${encodeURIComponent(code)}`); }
+  async function signupCaptcha()                { return request('GET', '/signup/captcha'); }
+  async function checkSubdomain(code, name = '') {
+    const params = new URLSearchParams({ s: code });
+    if (name) params.set('name', name);
+    return request('GET', `/tenants/check-subdomain?${params}`);
+  }
   async function logout(refreshToken)           { return request('POST', '/auth/logout', { refresh_token: refreshToken }); }
   async function forgotPassword(email)          { return request('POST', '/auth/forgot-password', { email }); }
 
@@ -168,7 +173,7 @@ const API = (() => {
 
   return {
     setTokens, clearTokens, getToken, getRefreshToken, setTenantSubdomain, getTenantSubdomain, getBaseUrl,
-    login, register, registerTenant, checkSubdomain, logout, forgotPassword,
+    login, register, registerTenant, signupCaptcha, checkSubdomain, logout, forgotPassword,
     uploadDocuments, listDocuments, getDocument, updateDocument,
     approveDocument, archiveDocument, deleteDocument, downloadDocument, exportDocuments,
     adminUsers, adminUpdateUser, adminLogs, adminStats,

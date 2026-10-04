@@ -8,6 +8,7 @@ use App\Config\Database;
 use App\Helpers\Response;
 use App\Helpers\Validator;
 use App\Services\JWTService;
+use App\Services\SignupCaptcha;
 
 /**
  * TenantController
@@ -26,6 +27,10 @@ class TenantController
     public static function register(): never
     {
         $body = self::json();
+
+        if (!SignupCaptcha::check($body['captcha_token'] ?? '', $body['captcha_answer'] ?? '')) {
+            Response::error('CAPTCHA_FAILED', 'The verification code is incorrect. Request a new code and try again.', 422);
+        }
 
         // Accept both Accounts payload keys and HR-style signup keys.
         $orgNameRaw     = $body['org_name'] ?? $body['company_name'] ?? '';
@@ -76,42 +81,77 @@ class TenantController
 
         $tenantDbName = 'accounts360_' . $subdomain;
 
-        // ── 1. Check subdomain uniqueness in master ──────────────────────────
+        // ── 1. Same hr360_master client as HR and POS ────────────────────────
         $master = Database::connectMaster();
-        $stmt   = $master->prepare("SELECT id FROM tenants WHERE subdomain = ?");
-        $stmt->execute([$subdomain]);
-        if ($stmt->fetch()) {
-            Response::error('SUBDOMAIN_TAKEN', "The subdomain '$subdomain' is already registered.", 409);
+        $existing = self::locateTenant($master, $subdomain, $orgName);
+        if ($existing && (int) $existing['accounts_app'] === 1) {
+            Response::error('SUBDOMAIN_TAKEN', 'That company already has Accounts360tech. Sign in with the existing company code.', 409);
+        }
+        if ($existing) {
+            $canonical = self::matchKey((string) ($existing['company_code'] ?: $existing['subdomain']));
+            if (strlen($canonical) >= 3) {
+                $subdomain = $canonical;
+                $tenantDbName = 'accounts360_' . $subdomain;
+            }
         }
 
-        // ── 2. INSERT into hr360_master.tenants ──────────────────────────────
-        $stmt = $master->prepare(
-            "INSERT INTO tenants
-                (name, subdomain, db_host, db_name, accounts_db_name, db_user, db_password,
-                 status, hr_app, accounts_app, company_code, industry, country,
-                 contact_name, contact_designation, contact_email, contact_phone, source)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 1, ?, ?, ?, ?, ?, ?, ?, 'self_signup')"
-        );
         $dbHost = Config::get('DB_HOST', '127.0.0.1');
         $dbUser = Config::get('DB_USER', 'root');
         $dbPass = Config::get('DB_PASS', '');
-        $stmt->execute([
-            $orgName,
-            $subdomain,
-            $dbHost,
-            $tenantDbName,       // db_name (HR placeholder — no HR DB)
-            $tenantDbName,       // accounts_db_name
-            $dbUser,
-            $dbPass,
-            $subdomain,
-            $industry,
-            $country,
-            $adminName,
-            $designation,
-            $adminEmail,
-            $phone !== '' ? $phone : null,
-        ]);
-        $tenantId = (int) $master->lastInsertId();
+        $attached = $existing !== false;
+
+        // ── 2. Insert a new client, or turn Accounts on for the existing one ─
+        if ($attached) {
+            $tenantId = (int) $existing['id'];
+            $master->prepare(
+                "UPDATE tenants SET
+                    accounts_app = 1,
+                    accounts_db_name = ?,
+                    company_code = COALESCE(NULLIF(company_code, ''), ?),
+                    industry = COALESCE(NULLIF(industry, ''), ?),
+                    country = COALESCE(NULLIF(country, ''), ?),
+                    contact_name = COALESCE(NULLIF(contact_name, ''), ?),
+                    contact_designation = COALESCE(NULLIF(contact_designation, ''), ?),
+                    contact_email = COALESCE(NULLIF(contact_email, ''), ?),
+                    contact_phone = COALESCE(contact_phone, ?)
+                 WHERE id = ?"
+            )->execute([
+                $tenantDbName,
+                $subdomain,
+                $industry,
+                $country,
+                $adminName,
+                $designation,
+                $adminEmail,
+                $phone !== '' ? $phone : null,
+                $tenantId,
+            ]);
+        } else {
+            $stmt = $master->prepare(
+                "INSERT INTO tenants
+                    (name, subdomain, db_host, db_name, accounts_db_name, db_user, db_password,
+                     status, hr_app, accounts_app, company_code, industry, country,
+                     contact_name, contact_designation, contact_email, contact_phone, source)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, 1, ?, ?, ?, ?, ?, ?, ?, 'self_signup')"
+            );
+            $stmt->execute([
+                $orgName,
+                $subdomain,
+                $dbHost,
+                $tenantDbName,       // db_name (HR placeholder — no HR DB)
+                $tenantDbName,       // accounts_db_name
+                $dbUser,
+                $dbPass,
+                $subdomain,
+                $industry,
+                $country,
+                $adminName,
+                $designation,
+                $adminEmail,
+                $phone !== '' ? $phone : null,
+            ]);
+            $tenantId = (int) $master->lastInsertId();
+        }
 
         // ── 3. Create tenant database ────────────────────────────────────────
         try {
@@ -124,8 +164,11 @@ class TenantController
                  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             );
         } catch (\Exception $e) {
-            // Roll back master insert on DB creation failure
-            $master->prepare("DELETE FROM tenants WHERE id = ?")->execute([$tenantId]);
+            if ($attached) {
+                $master->prepare("UPDATE tenants SET accounts_app = 0, accounts_db_name = NULL WHERE id = ?")->execute([$tenantId]);
+            } else {
+                $master->prepare("DELETE FROM tenants WHERE id = ?")->execute([$tenantId]);
+            }
             Response::error('DB_CREATION_FAILED', 'Could not create tenant database.', 500);
         }
 
@@ -209,11 +252,66 @@ class TenantController
         }
 
         $master = Database::connectMaster();
-        $stmt   = $master->prepare("SELECT id FROM tenants WHERE subdomain = ?");
-        $stmt->execute([$s]);
-        $taken = (bool) $stmt->fetch();
+        $row = self::locateTenant($master, $s, trim((string) ($_GET['name'] ?? '')));
+        $taken = $row && (int) $row['accounts_app'] === 1;
+        $existing = $row && !$taken;
 
-        Response::json(['subdomain' => $s, 'available' => !$taken]);
+        Response::json([
+            'subdomain' => $s,
+            'available' => !$taken,
+            'existing_client' => $existing,
+            'message' => $taken
+                ? 'That company already has Accounts360tech. Sign in with the existing company code.'
+                : ($existing
+                    ? 'This company is already on 360tech. Accounts will open on the same company record.'
+                    : 'Available.'),
+        ]);
+    }
+
+    /**
+     * Find the one master client by company code or company name.
+     * A company created in HR or POS is reused instead of inserting another row.
+     *
+     * @return array<string, mixed>|false
+     */
+    private static function locateTenant(\PDO $master, string $code, string $companyName): array|false
+    {
+        $codeKey = self::matchKey($code);
+        $nameKey = self::matchKey($companyName);
+        $rows = $master->query(
+            'SELECT id, name, subdomain, company_code, accounts_app FROM tenants'
+        )->fetchAll();
+        $byCode = null;
+        $byName = null;
+        foreach ($rows ?: [] as $row) {
+            $codes = array_filter([
+                self::matchKey((string) ($row['company_code'] ?? '')),
+                self::matchKey((string) ($row['subdomain'] ?? '')),
+            ]);
+            if ($codeKey !== '' && in_array($codeKey, $codes, true)) {
+                $byCode = $row;
+            }
+            if ($nameKey !== '' && self::matchKey((string) ($row['name'] ?? '')) === $nameKey) {
+                $byName ??= $row;
+            }
+        }
+        if ($byCode && $byName && (int) $byCode['id'] !== (int) $byName['id']) {
+            Response::error(
+                'COMPANY_CONFLICT',
+                'That company name is already registered under a different company code.',
+                409
+            );
+        }
+
+        return $byCode ?? $byName ?? false;
+    }
+
+    private static function matchKey(string $raw): string
+    {
+        $key = strtolower(trim($raw));
+        $key = preg_replace('/[^a-z0-9]+/', '', $key) ?? '';
+
+        return substr($key, 0, 40);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ require_once $root . '/src/Config/Database.php';
 require_once $root . '/src/Helpers/Response.php';
 require_once $root . '/src/Helpers/Validator.php';
 require_once $root . '/src/Services/JWTService.php';
+require_once $root . '/src/Services/SignupCaptcha.php';
 require_once $root . '/src/Services/FileService.php';
 require_once $root . '/src/Services/DocumentAIService.php';
 require_once $root . '/src/Services/ExportService.php';
@@ -77,6 +78,7 @@ $uri     = '/' . trim($uri, '/');
 // Tenant routes (public — no auth)
 if ($uri === '/api/v1/tenants/register'         && $method === 'POST') { TenantController::register(); }
 if ($uri === '/api/v1/tenants/check-subdomain'  && $method === 'GET')  { TenantController::checkSubdomain(); }
+if ($uri === '/api/v1/signup/captcha'           && $method === 'GET')  { \App\Services\SignupCaptcha::issueJson(); }
 
 // Auth routes (public)
 if ($uri === '/api/v1/auth/register'       && $method === 'POST') { AuthController::register(); }
