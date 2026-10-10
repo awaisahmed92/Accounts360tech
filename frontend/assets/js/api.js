@@ -6,15 +6,21 @@
 const API = (() => {
   // Auto-detect: production domain uses /backend/public path; local WAMP uses sub-path
   const _origin = window.location.origin;
-  const _isLocal = _origin.includes('localhost') || _origin.includes('127.0.0.1');
-  const BASE = _isLocal
+  const _host = window.location.hostname;
+  const _isLoopback = _host === 'localhost' || _host === '127.0.0.1';
+  // WAMP serves the site over http on localhost. The Android app is https://localhost
+  // and must call the live API. CapacitorHttp bypasses browser CORS for that call.
+  const _isHttpLocal = window.location.protocol === 'http:' && _isLoopback;
+  const BASE = _isHttpLocal
     ? (() => {
         const path = window.location.pathname;
         const cut = path.indexOf('/frontend');
         const root = cut >= 0 ? path.slice(0, cut) : '';
         return _origin + root + '/backend/public/api/v1';
       })()
-    : _origin + '/backend/public/api/v1';
+    : (_isLoopback
+        ? 'https://accounts360techx.com/backend/public/api/v1'
+        : _origin + '/backend/public/api/v1');
 
   let _token        = localStorage.getItem('token')        || null;
   let _refreshToken = localStorage.getItem('refresh_token') || null;

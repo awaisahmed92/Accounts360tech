@@ -1,0 +1,10 @@
+{
+  "appId": "com.accounts360techx.app",
+  "appName": "Accounts360",
+  "webDir": "frontend",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

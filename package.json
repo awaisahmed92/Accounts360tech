@@ -1,0 +1,26 @@
+{
+  "name": "accounts360tech",
+  "version": "1.0.0",
+  "description": "Pre-accounting automation: upload receipts & invoices → AI extracts data → review & approve → bookkeeping → export.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awaisahmed92/Accounts360tech.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/awaisahmed92/Accounts360tech/issues"
+  },
+  "homepage": "https://github.com/awaisahmed92/Accounts360tech#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  }
+}
