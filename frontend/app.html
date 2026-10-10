@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accounts360tech</title>
   <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="assets/css/app.css?v=20261010shell" />
+  <link rel="stylesheet" href="assets/css/app.css?v=20261010ui" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -16,6 +16,7 @@
      AUTH SCREENS
 ══════════════════════════════════════════════════════════════ -->
 <div id="screen-auth" class="auth-screen hidden">
+  <div class="auth-pane">
   <div class="auth-card">
     <div class="auth-brand">
       <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="36" height="36" />
@@ -24,26 +25,25 @@
 
     <!-- Login Form -->
     <div id="form-login">
-      <h2 class="auth-title">Sign in to your account</h2>
+      <h2 class="auth-title">Welcome Back</h2>
+      <p class="auth-sub">Sign in to continue</p>
       <div id="auth-error" class="alert alert-error hidden"></div>
       <form id="login-form" novalidate>
         <div class="field">
-          <label for="login-company">Company Name:</label>
+          <label for="login-company">Company Name</label>
           <input type="text" id="login-company" placeholder="demo001" required />
         </div>
         <div class="field">
-          <label for="login-username">UserName:</label>
+          <label for="login-username">UserName</label>
           <input type="text" id="login-username" placeholder="UserName" required />
         </div>
         <div class="field">
-          <label for="login-password">Password:</label>
-          <input type="password" id="login-password" placeholder="••••••••" required />
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" required />
         </div>
-        <div class="field-row">
-          <label class="checkbox-label"><input type="checkbox" id="remember-me" /> Remember me</label>
-          <a href="#" id="link-forgot" class="link-muted">Forgot password?</a>
-        </div>
-        <button type="submit" class="btn btn-primary btn-full" id="btn-login">Sign in</button>
+        <label class="checkbox-label auth-remember"><input type="checkbox" id="remember-me" /> Remember me</label>
+        <button type="submit" class="btn btn-primary btn-full" id="btn-login">Log in</button>
+        <p class="auth-forgot"><a href="#" id="link-forgot">Forgot Password?</a></p>
       </form>
       <p class="auth-switch">Don't have an account? <a href="#" id="link-register">Create one</a></p>
     </div>
@@ -143,7 +143,19 @@
       </form>
       <p class="auth-switch"><a href="#" id="link-back-login">← Back to sign in</a></p>
     </div>
+    <div class="auth-foot">© 2026 Accounts360tech. All Rights Reserved.</div>
   </div>
+  </div>
+  <aside class="auth-hero">
+    <h1>Receipts, ledgers,<br>and reports<br>made simple</h1>
+    <p>Accounts360tech helps companies record receipts, keep ledgers, and close the books in one place.</p>
+    <div class="auth-art" aria-hidden="true">
+      <svg width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="#0e7c66" stroke-width="1.2">
+        <path d="M6 3h9l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+        <path d="M14 3v4h4M8 12h8M8 16h6"/>
+      </svg>
+    </div>
+  </aside>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
