@@ -56,6 +56,8 @@ const App = (() => {
     const navItem = document.querySelector(`.nav-item[data-view="${name}"]`);
     if (view)    view.classList.remove('hidden');
     if (navItem) navItem.classList.add('active');
+    document.getElementById('sidebar')?.classList.remove('is-open');
+    document.getElementById('sidebar-scrim')?.classList.add('hidden');
     currentView = name;
 
     switch (name) {
@@ -100,6 +102,18 @@ const App = (() => {
 
     // Logout
     document.getElementById('btn-logout').addEventListener('click', logout);
+
+    const menuBtn = document.getElementById('btn-menu');
+    const sidebar = document.getElementById('sidebar');
+    const scrim = document.getElementById('sidebar-scrim');
+    menuBtn?.addEventListener('click', () => {
+      const open = sidebar?.classList.toggle('is-open');
+      scrim?.classList.toggle('hidden', !open);
+    });
+    scrim?.addEventListener('click', () => {
+      sidebar?.classList.remove('is-open');
+      scrim.classList.add('hidden');
+    });
 
     // Check for existing session
     const savedUser  = localStorage.getItem('user');

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accounts360tech</title>
   <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="assets/css/app.css?v=20261004c" />
+  <link rel="stylesheet" href="assets/css/app.css?v=20261010shell" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
 
@@ -151,11 +151,13 @@
 ══════════════════════════════════════════════════════════════ -->
 <div id="screen-app" class="hidden">
 
+  <div class="sidebar-scrim hidden" id="sidebar-scrim"></div>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="36" height="36" />
-      <span class="brand-name">Accounts360</span>
+      <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="28" height="28" />
+      <span class="brand-name">Menu</span>
     </div>
     <nav class="sidebar-nav">
       <a href="#" class="nav-item" data-view="upload">
@@ -193,7 +195,16 @@
         Admin
       </a>
     </nav>
-    <div class="sidebar-footer">
+  </aside>
+
+  <div class="app-column">
+    <header class="topbar">
+      <button type="button" class="topbar-menu" id="btn-menu" aria-label="Menu">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+      </button>
+      <img class="brand-icon" src="assets/logo-mark.svg" alt="" width="28" height="28" />
+      <span class="topbar-title">Accounts360</span>
+      <div class="topbar-spacer"></div>
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar-letter">U</div>
         <div class="user-info">
@@ -204,8 +215,7 @@
       <button class="btn-icon" id="btn-logout" title="Sign out">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"/></svg>
       </button>
-    </div>
-  </aside>
+    </header>
 
   <!-- Main content area -->
   <main class="main-content">
@@ -728,6 +738,7 @@
     </div>
 
   </main>
+  </div>
 </div>
 
 <!-- Toast notification -->
