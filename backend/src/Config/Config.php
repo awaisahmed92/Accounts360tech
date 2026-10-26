@@ -21,6 +21,13 @@ class Config
             [$key, $value] = array_map('trim', explode('=', $line, 2));
             self::$data[$key] = $value;
         }
+        // The server's own environment wins over a .env copied from a developer machine.
+        foreach (self::$data as $key => $value) {
+            $fromServer = getenv($key);
+            if ($fromServer !== false && $fromServer !== '') {
+                self::$data[$key] = $fromServer;
+            }
+        }
         self::$loaded = true;
     }
 

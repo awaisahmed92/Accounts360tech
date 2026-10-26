@@ -8,37 +8,58 @@ use App\Config\Config;
 class FileService
 {
     private const ALLOWED_MIME = [
-        'application/pdf' => 'pdf',
-        'image/jpeg'      => 'jpg',
-        'image/png'       => 'png',
+        'application/pdf'   => 'pdf',
+        'application/x-pdf' => 'pdf',
+        'image/jpeg'        => 'jpg',
+        'image/jpg'         => 'jpg',
+        'image/pjpeg'       => 'jpg',
+        'image/png'         => 'png',
+        'image/webp'        => 'webp',
+        'image/gif'         => 'gif',
     ];
 
     private const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
     public static function store(array $file, int $userId): array
     {
-        $storagePath = Config::get('STORAGE_PATH', __DIR__ . '/../../storage/documents');
-        $userDir     = $storagePath . DIRECTORY_SEPARATOR . $userId;
-
-        if (!is_dir($userDir)) {
-            mkdir($userDir, 0755, true);
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new \InvalidArgumentException(self::uploadError((int) $file['error']));
+        }
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            throw new \RuntimeException('The file did not reach the server. Use a PDF or picture under 20 MB.');
         }
 
-        // Validate size
+        $userDir = self::storageRoot() . DIRECTORY_SEPARATOR . $userId;
+        if (!is_dir($userDir) && !mkdir($userDir, 0775, true) && !is_dir($userDir)) {
+            throw new \RuntimeException('The invoice folder could not be created on the server.');
+        }
+        if (!is_writable($userDir)) {
+            throw new \RuntimeException('The invoice folder is not writable on the server.');
+        }
+
         if ($file['size'] > self::MAX_SIZE) {
-            throw new \InvalidArgumentException("File exceeds 20 MB limit.");
+            throw new \InvalidArgumentException('File exceeds 20 MB limit.');
         }
 
-        // Validate MIME via finfo
         $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (!array_key_exists($mimeType, self::ALLOWED_MIME)) {
-            throw new \InvalidArgumentException("Unsupported file type: $mimeType");
+        $mimeType = $finfo ? (finfo_file($finfo, $file['tmp_name']) ?: '') : '';
+        if ($finfo) {
+            finfo_close($finfo);
         }
 
-        $ext      = self::ALLOWED_MIME[$mimeType];
+        $ext = self::ALLOWED_MIME[$mimeType] ?? self::extensionFallback($file['name'], $mimeType);
+        if ($ext === null) {
+            throw new \InvalidArgumentException('Use a PDF, PNG, JPEG, WEBP, or GIF.');
+        }
+        if (!array_key_exists($mimeType, self::ALLOWED_MIME)) {
+            $mimeType = match ($ext) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                'webp' => 'image/webp',
+                'gif' => 'image/gif',
+                default => 'image/jpeg',
+            };
+        }
         $uuid     = self::uuid4();
         $fileName = "$uuid.$ext";
         $fullPath = $userDir . DIRECTORY_SEPARATOR . $fileName;
@@ -78,6 +99,48 @@ class FileService
         header('X-Content-Type-Options: nosniff');
         readfile($filePath);
         exit;
+    }
+
+    /** Folder for invoice files. A Windows path copied into the Linux server is ignored. */
+    private static function storageRoot(): string
+    {
+        $configured = trim((string) (getenv('STORAGE_PATH') ?: Config::get('STORAGE_PATH', '')));
+        $fallback   = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'documents';
+        if ($configured !== '' && PHP_OS_FAMILY !== 'Windows' && preg_match('/^[A-Za-z]:[\\\\\\/]/', $configured)) {
+            $configured = '';
+        }
+        $root = $configured !== '' ? $configured : $fallback;
+        if (!is_dir($root) && !mkdir($root, 0775, true) && !is_dir($root)) {
+            throw new \RuntimeException('The invoice folder could not be created on the server.');
+        }
+        if (!is_writable($root)) {
+            throw new \RuntimeException('The invoice folder is not writable on the server.');
+        }
+
+        return $root;
+    }
+
+    private static function extensionFallback(string $name, string $mimeType): ?string
+    {
+        if ($mimeType !== '' && $mimeType !== 'application/octet-stream') {
+            return null;
+        }
+        $map = [
+            'pdf' => 'pdf', 'png' => 'png', 'jpg' => 'jpg', 'jpeg' => 'jpg',
+            'webp' => 'webp', 'gif' => 'gif',
+        ];
+
+        return $map[strtolower(pathinfo($name, PATHINFO_EXTENSION))] ?? null;
+    }
+
+    private static function uploadError(int $code): string
+    {
+        return match ($code) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds 20 MB limit.',
+            UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please try again.',
+            UPLOAD_ERR_NO_FILE => 'No file was selected.',
+            default => 'The file could not be uploaded.',
+        };
     }
 
     private static function uuid4(): string

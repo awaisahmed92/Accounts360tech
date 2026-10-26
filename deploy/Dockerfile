@@ -46,14 +46,16 @@ WORKDIR /var/www/html
 COPY backend/ /var/www/html/backend/
 COPY frontend/ /var/www/html/frontend/
 
-# Storage directory
-RUN mkdir -p /var/www/html/storage/documents \
- && chown -R www-data:www-data /var/www/html/storage \
- && chmod -R 755 /var/www/html/storage
+# Storage directory. The entrypoint fixes ownership again when a volume is mounted.
+COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
+RUN mkdir -p /var/www/html/storage/documents /var/www/html/backend/storage/documents \
+ && chown -R www-data:www-data /var/www/html/storage /var/www/html/backend/storage \
+ && chmod -R 775 /var/www/html/storage /var/www/html/backend/storage \
+ && chmod +x /docker-entrypoint.sh
 
 # Nginx needs to write logs
 RUN chown -R nginx:nginx /var/lib/nginx \
  && chmod -R 755 /var/lib/nginx
 
 EXPOSE 80
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

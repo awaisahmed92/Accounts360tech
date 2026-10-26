@@ -15,6 +15,10 @@ class DocumentController
     public static function upload(array $auth): never
     {
         if (empty($_FILES['files'])) {
+            $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+            if ($length > 0) {
+                Response::error('UPLOAD_REJECTED', 'The file was rejected before it could be saved. Use a PDF or picture under 20 MB.', 422);
+            }
             Response::error('NO_FILES', 'No files uploaded.', 422);
         }
 
@@ -45,6 +49,10 @@ class DocumentController
                 if ($db->inTransaction()) $db->rollBack();
                 $errors[] = ['file' => $file['name'], 'error' => $e->getMessage()];
             }
+        }
+
+        if ($uploaded === [] && $errors !== []) {
+            Response::error('UPLOAD_FAILED', (string) $errors[0]['error'], 422);
         }
 
         Response::json(['uploaded' => count($uploaded), 'documents' => $uploaded, 'errors' => $errors], 201);
@@ -318,7 +326,7 @@ class DocumentController
                 'size'     => $rawFiles['size'][$i],
             ];
         }
-        return array_filter($files, fn($f) => $f['error'] === UPLOAD_ERR_OK);
+        return $files;
     }
 
     private static function json(): array

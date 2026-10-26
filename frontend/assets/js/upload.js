@@ -28,10 +28,11 @@ const Upload = (() => {
   }
 
   function stageFiles(files) {
-    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+    const allowedExt = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
     const maxSize = 20 * 1024 * 1024;
     files.forEach(f => {
-      if (!allowed.includes(f.type)) { Toast.show(`${f.name}: unsupported type.`, 'error'); return; }
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      if (!allowedExt.includes(ext)) { Toast.show(`${f.name}: use a PDF, PNG, JPEG, WEBP, or GIF.`, 'error'); return; }
       if (f.size > maxSize)          { Toast.show(`${f.name}: exceeds 20 MB.`, 'error'); return; }
       if (stagedFiles.length >= 10)  { Toast.show('Maximum 10 files per batch.', 'error'); return; }
       stagedFiles.push({ file: f, status: 'staged', progress: 0, id: null });
@@ -87,12 +88,17 @@ const Upload = (() => {
       });
     }, 150);
 
-    const res = await API.uploadDocuments(formData);
+    let res = null;
+    try {
+      res = await API.uploadDocuments(formData);
+    } catch (err) {
+      res = null;
+    }
     clearInterval(progressInterval);
 
     if (!res?.success) {
       toUpload.forEach(item => item.status = 'error');
-      Toast.show(res?.error?.message || 'Upload failed.', 'error');
+      Toast.show(res?.error?.message || 'Upload failed. The invoice was not saved.', 'error');
     } else {
       toUpload.forEach(item => { item.progress = 100; item.status = 'done'; });
       Toast.show(`${res.data.uploaded} file(s) uploaded. AI processing started.`, 'success');
