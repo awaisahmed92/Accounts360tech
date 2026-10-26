@@ -11,7 +11,11 @@ class SignupCaptcha
 {
     public static function issueJson(): never
     {
-        Response::json(self::issue());
+        try {
+            Response::json(self::issue());
+        } catch (\Throwable $e) {
+            Response::error('CAPTCHA_UNAVAILABLE', 'Could not load the verification code.', 503);
+        }
     }
 
     public static function issue(): array
@@ -22,7 +26,7 @@ class SignupCaptcha
 
         return [
             'token' => $token,
-            'image' => 'data:image/png;base64,' . base64_encode(self::png($code)),
+            'image' => self::imageData($code),
         ];
     }
 
@@ -49,12 +53,17 @@ class SignupCaptcha
 
     private static function dir(): string
     {
-        $dir = dirname(__DIR__, 2) . '/storage/captcha';
-        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-            throw new RuntimeException('Could not store the verification code.');
+        $candidates = [
+            dirname(__DIR__, 2) . '/storage/captcha',
+            sys_get_temp_dir() . '/accounts360-captcha',
+        ];
+        foreach ($candidates as $dir) {
+            if ((is_dir($dir) || @mkdir($dir, 0775, true)) && is_dir($dir) && is_writable($dir)) {
+                return $dir;
+            }
         }
 
-        return $dir;
+        throw new RuntimeException('Could not store the verification code.');
     }
 
     private static function write(string $token, string $hash, int $expires): void
@@ -104,11 +113,40 @@ class SignupCaptcha
         return $code;
     }
 
+    private static function imageData(string $code): string
+    {
+        if (function_exists('imagecreatetruecolor')) {
+            return 'data:image/png;base64,' . base64_encode(self::png($code));
+        }
+
+        return 'data:image/svg+xml;base64,' . base64_encode(self::svg($code));
+    }
+
+    private static function svg(string $code): string
+    {
+        $letters = '';
+        $x = 16;
+        foreach (str_split($code) as $character) {
+            $y = random_int(32, 42);
+            $rot = random_int(-14, 14);
+            $safe = htmlspecialchars($character, ENT_XML1);
+            $letters .= '<text x="' . $x . '" y="' . $y . '" transform="rotate(' . $rot . ' ' . $x . ' ' . $y . ')" '
+                . 'font-family="monospace" font-size="28" font-weight="700" fill="#16335c">' . $safe . '</text>';
+            $x += 30;
+        }
+        $lines = '';
+        for ($i = 0; $i < 6; $i++) {
+            $lines .= '<line x1="' . random_int(0, 168) . '" y1="' . random_int(0, 56)
+                . '" x2="' . random_int(0, 168) . '" y2="' . random_int(0, 56)
+                . '" stroke="#8caad2" stroke-width="1"/>';
+        }
+
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="168" height="56" viewBox="0 0 168 56">'
+            . '<rect width="168" height="56" fill="#eaf3fb"/>' . $lines . $letters . '</svg>';
+    }
+
     private static function png(string $code): string
     {
-        if (!function_exists('imagecreatetruecolor')) {
-            throw new RuntimeException('The captcha image library is not available.');
-        }
 
         $image = imagecreatetruecolor(168, 56);
         $background = imagecolorallocate($image, 234, 243, 251);

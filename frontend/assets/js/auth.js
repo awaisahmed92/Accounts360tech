@@ -30,9 +30,15 @@ const Auth = (() => {
     const token = document.getElementById('reg-captcha-token');
     const answer = document.getElementById('reg-captcha');
     if (!image || !token) return;
-    const res = await API.signupCaptcha();
+    let res = null;
+    try {
+      res = await API.signupCaptcha();
+    } catch (err) {
+      res = null;
+    }
     if (!res?.success || !res.data?.image || !res.data?.token) {
-      setError('reg-error', 'Could not load the verification code.');
+      if (image) image.removeAttribute('src');
+      setError('reg-error', res?.error?.message || 'Could not load the verification code.');
       return;
     }
     image.src = res.data.image;
