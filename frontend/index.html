@@ -100,7 +100,9 @@
       background: rgba(59,130,246,.2); color: #bfdbfe;
       display: grid; place-items: center; font-size: 13px; font-weight: 700;
     }
-    footer { color: var(--muted); font-size: 13px; padding-bottom: 28px; }
+    footer { color: var(--muted); font-size: 13px; padding-bottom: 28px; line-height: 1.7; }
+    footer a { color: #cbd5e1; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
     @media (max-width: 800px) {
       .grid { grid-template-columns: 1fr 1fr; }
       .hero { padding-top: 36px; }
@@ -150,10 +152,14 @@
       </article>
     </section>
 
-    <footer>Accounts360tech</footer>
+    <footer>
+      Accounts360tech<br>
+      <a href="mailto:info@360techx.com">info@360techx.com</a>
+      · <a href="mailto:support@360techx.com">support@360techx.com</a>
+    </footer>
   </div>
-  <link rel="stylesheet" href="../../shared/support-chat/widget.css?v=20261027">
-  <script src="../../shared/support-chat/widget.js?v=20261027" data-site="accounts"></script>
+  <link rel="stylesheet" href="../../shared/support-chat/widget.css?v=20261027b">
+  <script src="../../shared/support-chat/widget.js?v=20261027b" data-site="accounts"></script>
   <link rel="stylesheet" href="../../shared/translate/translate.css">
   <script src="../../shared/translate/translate.js"></script>
 </body>
